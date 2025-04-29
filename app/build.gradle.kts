@@ -1,3 +1,6 @@
+//import androidx.glance.appwidget.compose
+//import androidx.navigation.compose.navigation
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,12 +8,12 @@ plugins {
 
 android {
     namespace = "com.example.gameclubbooking"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.gameclubbooking"
         minSdk = 34
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -50,20 +53,32 @@ android {
 }
 
 dependencies {
+    // Coil for image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // Core and Lifecycle
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // Compose BOM (Bill of Materials) - Manages Compose versions
     implementation(platform(libs.androidx.compose.bom))
+
+    // Compose UI
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+    // Compose Tooling (for previews)
+    debugImplementation(libs.androidx.ui.tooling)
+    implementation(libs.androidx.ui.tooling.preview)
+
+    // Navigation Compose
+    implementation(libs.androidx.navigation.compose)
+
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }

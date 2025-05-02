@@ -42,6 +42,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,16 +62,21 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
 
 @Preview(showBackground = true)
 @Composable
 fun Pre2(){
     ClubDetailsScreen(1, navController = rememberNavController())
-}
-@OptIn(ExperimentalMaterial3Api::class)
+}@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClubDetailsScreen(clubId: Int, navController: NavController) {
+    // Get the club by ID
     val club = sampleClubs.find { it.id == clubId }
+    var isLiked by remember { mutableStateOf(club?.isLiked ?: false) }
+
+    // Background Color for the whole screen
+    val backgroundColor = Color(0xFF101828)
 
     Scaffold(
         topBar = {
@@ -78,17 +84,29 @@ fun ClubDetailsScreen(clubId: Int, navController: NavController) {
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Like */ }) {
-                        Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorite")
+                    IconButton(onClick = {
+                        // Toggle like state
+                        isLiked = !isLiked
+                    }) {
+                        Icon(
+                            imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorite",
+                            tint = Color.White
+                        )
                     }
                     IconButton(onClick = { /* Cart */ }) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = "Cart")
+                        Icon(Icons.Default.ShoppingCart, contentDescription = "Cart", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = backgroundColor,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         }
     ) { padding ->
@@ -97,6 +115,7 @@ fun ClubDetailsScreen(clubId: Int, navController: NavController) {
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()
+                    .background(backgroundColor) // Apply background color here
             ) {
                 // Image
                 Image(
@@ -116,17 +135,39 @@ fun ClubDetailsScreen(clubId: Int, navController: NavController) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text(text = "ALMATY COMPUEE CLUB", fontSize = 14.sp)
-                        Text(text = "ARENA", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(
+                            text = "ALMATY COMPUEE CLUB",
+                            fontSize = 14.sp,
+                            fontFamily = PoppinsFontFamily,
+                            color = Color.White
+                        )
+                        Text(
+                            text = it.name,  // Use the club's name here
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            fontFamily = PoppinsFontFamily,
+                            color = Color.White
+                        )
                     }
-                    Text(text = "Total Price\n$1000", textAlign = TextAlign.End)
+                    Text(
+                        text = "Total Price\n$1000",
+                        textAlign = TextAlign.End,
+                        fontFamily = PoppinsFontFamily,
+                        color = Color.White
+                    )
                 }
 
-                Divider()
+                Divider(color = Color.Gray)
 
                 // Select Date
                 Column(Modifier.padding(horizontal = 16.dp)) {
-                    Text("Select DATE", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Text(
+                        "Select DATE",
+                        fontSize = 14.sp,
+                        fontFamily = PoppinsFontFamily,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                     Row {
                         (1..6).forEach {
                             Box(
@@ -138,7 +179,7 @@ fun ClubDetailsScreen(clubId: Int, navController: NavController) {
                                     .clickable { /* select date */ },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("$it")
+                                Text("$it", color = Color.White, fontFamily = PoppinsFontFamily)
                             }
                         }
                     }
@@ -148,7 +189,14 @@ fun ClubDetailsScreen(clubId: Int, navController: NavController) {
 
                 // Select Place
                 Column(Modifier.padding(horizontal = 16.dp)) {
-                    Text("Select PLACE", fontSize = 14.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Text(
+                        "Select PLACE",
+                        fontSize = 14.sp,
+                        fontFamily = PoppinsFontFamily,
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    // Example for placeholders - uncomment FlowRow for a more dynamic layout
 //                    FlowRow(
 //                        mainAxisSpacing = 8.dp,
 //                        crossAxisSpacing = 8.dp
@@ -164,12 +212,18 @@ fun ClubDetailsScreen(clubId: Int, navController: NavController) {
 //                    }
                 }
 
-                Divider(modifier = Modifier.padding(vertical = 16.dp))
+                Divider(modifier = Modifier.padding(vertical = 16.dp), color = Color.Gray)
 
                 // Reviews
                 Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color.Yellow)
-                    Text("4.5", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 4.dp))
+                    Text(
+                        "4.5",
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(start = 4.dp),
+                        fontFamily = PoppinsFontFamily,
+                        color = Color.White
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -183,24 +237,39 @@ fun ClubDetailsScreen(clubId: Int, navController: NavController) {
                 ) {
                     Button(
                         onClick = { /* Remind later */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
-                        modifier = Modifier.weight(1f)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("REMIND LATER", color = Color.Black)
+                        Text(
+                            "REMIND LATER",
+                            color = Color.White,
+                            fontFamily = PoppinsFontFamily
+                        )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Button(
                         onClick = { /* Buy now */ },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Buy Now")
+                        Text(
+                            "Buy Now",
+                            fontFamily = PoppinsFontFamily,
+                            color = Color.White
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
         } ?: run {
-            Text("Club not found", modifier = Modifier.padding(16.dp))
+            Text(
+                "Club not found",
+                modifier = Modifier.padding(16.dp),
+                fontFamily = PoppinsFontFamily,
+                color = Color.White
+            )
         }
     }
 }

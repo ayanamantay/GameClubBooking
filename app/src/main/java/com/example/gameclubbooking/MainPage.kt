@@ -1,34 +1,45 @@
 package com.example.gameclubbooking
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -37,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -45,11 +57,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
+
+import com.google.accompanist.pager.HorizontalPager
+import com.google.accompanist.pager.HorizontalPagerIndicator
+import com.google.accompanist.pager.rememberPagerState
+import com.google.accompanist.pager.ExperimentalPagerApi
+
 
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    MainScreen()
+//    MainScreen()
+
 }
 
 sealed class Screen(val route: String) {
@@ -75,17 +95,22 @@ sealed class Screen(val route: String) {
     }
 
 }
-
     data class BottomNavItem(
     val title: String,
     val icon: ImageVector,
     val screen: Screen
 )
+val HomeBackgroundColor = Color(0xFF0A192F)
+val CardColor = Color(0xFF112240)
+val ButtonGreen = Color(0xFF4CAF50)
+val TextWhite = Color.White
 
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+//    val ordersViewModel: OrdersViewModel = viewModel()
+
 
     val items = listOf(
         BottomNavItem("Home", Icons.Default.Home, Screen.Home),
@@ -96,37 +121,34 @@ fun MainScreen() {
     )
 
     Scaffold(
-        bottomBar = {
-            NavigationBar {
-                val currentDestination = navController.currentBackStackEntryAsState().value?.destination
-                items.forEach { item ->
-                    NavigationBarItem(
-                        selected = currentDestination?.route == item.screen.route,
-                        onClick = {
-                            navController.navigate(item.screen.route) {
-                                popUpTo(navController.graph.startDestinationId) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(imageVector = item.icon, contentDescription = item.title) },
-                        label = { Text(item.title) }
-                    )
-                }
+        containerColor = Color(0xFF101828), // Example dark theme background
+
+            bottomBar = {
+                CustomBottomNavigationBar(navController = navController, items = items)
             }
-        }
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Home.route) { HomeScreen(navController) }
+            composable(Screen.Home.route) {
+                HomeScreen(navController = navController)
+            }
+
             composable(Screen.MyOrders.route) { MyOrdersScreen(navController) }
-            composable(Screen.LikedClubs.route) { LikedClubsScreen(navController) }
-            composable(Screen.Tournaments.route) { TournamentsScreen(navController) }
+            composable("liked") {
+                LikedClubsScreen(
+                    clubs = sampleClubs, // pass full list, it will filter internally
+                    onLikeClick = { /* optional like toggle */ }
+                )
+            }
+
+
+            composable(Screen.Tournaments.route) {
+                // Pass the sampleTournaments list to TournamentsScreen
+                TournamentsScreen(tournaments = sampleTournaments)
+            }
             composable(Screen.Profile.route) { ProfileScreen(navController) }
 
             // Additional pages from profile
@@ -134,7 +156,7 @@ fun MainScreen() {
             composable(Screen.Notifications.route) { NotificationScreen(navController) }
             composable(Screen.PasswordManager.route) { PasswordManagerScreen(navController) }
             composable(Screen.YourProfile.route) { YourProfileScreen(navController) }
-            composable(Screen.PaymentMethods.route) { PaymentMethodsScreen(navController) }
+            composable(Screen.PaymentMethods.route) { EReceiptScreen(navController) }
             composable(Screen.MyClubs.route) { MyClubsScreen(navController) }
             composable(Screen.HelpCenter.route) { HelpCenterScreen(navController) }
             composable(Screen.PrivacyPolicy.route) { PrivacyPolicyScreen(navController) }
@@ -153,91 +175,95 @@ fun MainScreen() {
     }
 }
 
-@Composable
-fun InviteFriendsScreen(navController: NavHostController) {
-    TODO("Not yet implemented")
-}
 
-@Composable
-fun PrivacyPolicyScreen(navController: NavHostController) {
-    TODO("Not yet implemented")
-}
-
-@Composable
-fun MyClubsScreen(navController: NavHostController) {
-    TODO("Not yet implemented")
-}
-
-@Composable
-fun PaymentMethodsScreen(navController: NavHostController) {
-    TODO("Not yet implemented")
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    Spacer(modifier = Modifier.height(20.dp))
+    val scrollState = rememberScrollState()
+
+    // Simulate clubs list with local state
+    var clubs by remember { mutableStateOf(sampleClubs) }
+
+    // Handle like and book
+    fun toggleLike(club: GameClub) {
+        clubs = clubs.map {
+            if (it.id == club.id) it.copy(isLiked = !it.isLiked) else it
+        }
+    }
+
+    fun bookClub(club: GameClub) {
+        println("Booked: ${club.name}") // Simulate booking
+    }
+
     Scaffold(
+        containerColor = Color(0xFF0A192F),
         topBar = {
             TopAppBar(
                 title = {
-                    Image(
-                        painter = painterResource(id = R.drawable.photo_2025_04_27_00_55_03),
-                        contentDescription = null,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Text(
-                        "UNIGAME",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 40.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "Logo",
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "UNIGAME",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = PoppinsFontFamily,
+                            color = TextWhite
+                        )
+                    }
                 },
                 actions = {
-                    IconButton(onClick = { /* Search */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    IconButton(onClick = { navController.navigate("search") }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = TextWhite)
                     }
-                    IconButton(onClick = { /* Profile */ }) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile")
+                    IconButton(onClick = { navController.navigate("ereceipt") }) {
+                        Icon(Icons.Default.Star, contentDescription = "Subs", tint = TextWhite)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0A192F))
             )
         }
     ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
-            // Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Card(
-                    modifier = Modifier
-                        .padding(horizontal = 20.dp)
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .shadow(4.dp, shape = RoundedCornerShape(8.dp))
-                ) {
-                    Text(
-                        "NAMING COMMUNITY",
-                        fontSize = 23.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(54.dp)
-                    )
-                }
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .background(Color(0xFF0A192F))
+                .verticalScroll(scrollState)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val newsItems = listOf(
+                "🔥 Big update coming soon!",
+                "📢 Community meeting this Sunday",
+                "💡 Tips for better naming"
+            )
+
+            NewsBannerPager(newsList = newsItems) {
+                println("Clicked on: $it")
             }
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(sampleClubs) { club ->
-                    ClubItem(club = club) {
-                        navController.navigate(Screen.ClubDetails.passId(club.id))
-                    }
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                clubs.forEach { club ->
+                    ClubItem(
+                        club = club,
+                        onClick = { navController.navigate(Screen.ClubDetails.passId(club.id)) },
+                        onLikeClick = { toggleLike(club) },
+                        onBookClick = {
+                            bookClub(club)
+                            navController.navigate(Screen.MyOrders.route)
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
@@ -245,13 +271,20 @@ fun HomeScreen(navController: NavController) {
 }
 
 @Composable
-fun ClubItem(club: GameClub, onClick: () -> Unit) {
+fun ClubItem(
+    club: GameClub,
+    onClick: () -> Unit,
+    onLikeClick: () -> Unit,
+    onBookClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
-            .clickable { onClick() }  // Add click support
-            .shadow(4.dp, shape = RoundedCornerShape(8.dp))
+            .height(220.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF112240)),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
             Image(
@@ -262,35 +295,176 @@ fun ClubItem(club: GameClub, onClick: () -> Unit) {
                     .height(120.dp),
                 contentScale = ContentScale.Crop
             )
-
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = club.name,
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 8.dp)
+                fontFamily = PoppinsFontFamily,
+                color = Color.White,
+                modifier = Modifier.padding(horizontal = 12.dp)
             )
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row {
-                    IconButton(onClick = { /* Like */ }) {
-                        Icon(Icons.Default.Favorite, contentDescription = "Like")
+                    IconButton(onClick = onLikeClick) {
+                        Icon(
+                            imageVector = if (club.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Like",
+                            tint = if (club.isLiked) Color.Red else Color.White
+                        )
                     }
-                    IconButton(onClick = { /* Share */ }) {
-                        Icon(Icons.Default.Email, contentDescription = "Comments")
+                    IconButton(onClick = { /* TODO: Add comments logic */ }) {
+                        Icon(Icons.Default.Email, contentDescription = "Comments", tint = Color.White)
                     }
-                    IconButton(onClick = { /* Send */ }) {
-                        Icon(Icons.Default.Send, contentDescription = "Send")
+                    IconButton(onClick = { /* TODO: Add send/share logic */ }) {
+                        Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
                     }
                 }
-                Button(onClick = { /* Book Now */ }) {
-                    Text(text = "Book Now")
+
+                Button(
+                    onClick = onBookClick,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+                ) {
+                    Text("Book Now", fontFamily = PoppinsFontFamily, color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BookNowButton(club: GameClub, ordersViewModel: OrdersViewModel) {
+    Button(
+        onClick = { ordersViewModel.placeOrder(club) },
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+    ) {
+        Text(
+            "Book Now",
+            fontFamily = PoppinsFontFamily,
+            color = Color.White
+        )
+    }
+}
+
+@Composable
+
+fun NewsBanner(newsTitle: String, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(140.dp)
+            .padding(horizontal = 20.dp)
+            .clickable { onClick() }
+            .shadow(8.dp, shape = RoundedCornerShape(16.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF2B3A55)) // Stylish dark blue
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Text(
+                text = newsTitle,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = PoppinsFontFamily,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(24.dp)
+            )
+        }
+    }
+}
+@OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class)
+
+@Composable
+fun NewsBannerPager(newsList: List<String>, onClick: (String) -> Unit) {
+    val pagerState = rememberPagerState()
+
+    Column {
+        HorizontalPager(
+            count = newsList.size,
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+        ) { page ->
+            NewsBanner(newsTitle = newsList[page]) {
+                onClick(newsList[page])
+            }
+        }
+
+        // Optional: Pager Indicator
+        HorizontalPagerIndicator(
+            pagerState = pagerState,
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(top = 8.dp),
+            activeColor = Color.White,
+            inactiveColor = Color.Gray
+        )
+    }
+}
+
+
+@Composable
+fun CustomBottomNavigationBar(
+    navController: NavController,
+    items: List<BottomNavItem>
+) {
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    Surface(
+        modifier = Modifier
+    .fillMaxWidth()
+            .height(70.dp)
+            .shadow(10.dp, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
+        color = Color(0xFF181818), // dark grey-blue (different from home bg)
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items.forEach { item ->
+                val selected = currentRoute == item.screen.route
+                val animatedColor by animateColorAsState(
+                    if (selected) Color(0xFF57C5B6) else Color.LightGray,
+                    label = ""
+                )
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .clickable {
+                            navController.navigate(item.screen.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                        .padding(6.dp)
+                ) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.title,
+                        tint = animatedColor,
+                        modifier = Modifier.size(26.dp)
+                    )
+                    Text(
+                        text = item.title,
+                        fontSize = 12.sp,
+                        color = animatedColor,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                    )
                 }
             }
         }
@@ -298,26 +472,116 @@ fun ClubItem(club: GameClub, onClick: () -> Unit) {
 }
 
 
-
 @Composable
-fun LikedClubsScreen(navController: NavHostController) {
+fun LikedClubsScreen(
+    clubs: List<GameClub>,
+    onLikeClick: (GameClub) -> Unit
+) {
+    val likedClubs = clubs.filter { it.isLiked }
+
     Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1C1C27))
     ) {
-        Text("Liked Clubs Page")
+        Text(
+            "Liked Clubs",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = PoppinsFontFamily,
+            color = Color.White,
+            modifier = Modifier.padding(20.dp)
+        )
+        LazyColumn {
+            items(likedClubs) { club ->
+                ClubItem(
+                    club = club,
+                    onClick = {},
+                    onBookClick = { println("Booked: ${club.name}") },
+                    onLikeClick = { onLikeClick(club) }
+                )
+            }
+        }
     }
 }
 
+
+data class Tournament(
+    val id: Int,
+    val title: String,
+    val description: String,
+    val date: String,
+    val imageRes: Int
+)
+
+val sampleTournaments = listOf(
+    Tournament(1, "Valorant Night", "Join the 5v5 tournament!", "May 18, 2025", R.drawable.valorant),
+    Tournament(2, "FIFA Showdown", "Compete in FIFA 24!", "June 3, 2025", R.drawable.fifa),
+    Tournament(3, "CS:GO Masters", "Clash with top CS:GO teams", "June 15, 2025", R.drawable.csgo)
+)
+
 @Composable
-fun TournamentsScreen(navController: NavHostController) {
+fun TournamentsScreen(tournaments: List<Tournament>) {
     Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1C1C27))
     ) {
-        Text("Tournaments Page")
+        Text(
+            "Upcoming Tournaments",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold,
+            fontFamily = PoppinsFontFamily,
+            color = Color.White,
+            modifier = Modifier.padding(20.dp)
+        )
+        LazyColumn {
+            items(tournaments) { tournament ->
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp, vertical = 10.dp)
+                        .fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF2B3A55)),
+                    elevation = CardDefaults.cardElevation(6.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Image(
+                            painter = painterResource(id = tournament.imageRes),
+                            contentDescription = tournament.title,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            tournament.title,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontFamily = PoppinsFontFamily,
+                            color = Color.White
+                        )
+                        Text(
+                            tournament.description,
+                            fontSize = 14.sp,
+                            color = Color.LightGray,
+                            fontFamily = PoppinsFontFamily
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            "Date: ${tournament.date}",
+                            fontSize = 13.sp,
+                            color = Color(0xFF80CBC4),
+                            fontFamily = PoppinsFontFamily
+                        )
+                    }
+                }
+            }
+        }
     }
 }
+
+
 

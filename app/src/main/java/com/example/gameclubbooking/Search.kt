@@ -1,5 +1,6 @@
 package com.example.gameclubbooking
 
+import CustomInputField
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -27,7 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-
+import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
 
 
 @Preview(showBackground = true)
@@ -46,7 +48,10 @@ fun SearchClubScreen(navController: NavController) {
         club.name.contains(searchQuery, ignoreCase = true)
     }
 
+    val backgroundColor = Color(0xFF101828)
+
     Scaffold(
+        containerColor = backgroundColor, // sets background for scaffold base layer
         topBar = {
             TopAppBar(
                 title = {
@@ -62,7 +67,12 @@ fun SearchClubScreen(navController: NavController) {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = backgroundColor,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
             )
         }
     ) { paddingValues ->
@@ -70,28 +80,64 @@ fun SearchClubScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(backgroundColor) // make sure entire content area is dark
                 .padding(16.dp)
         ) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("Search by club name") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
+                label = {
+                    Text(
+                        "Search by club name",
+                        color = Color.White,
+                        fontFamily = PoppinsFontFamily
+                    )
+                },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.White)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedLabelColor = Color.White,
+                    cursorColor = Color.White
+                ),
+                textStyle = TextStyle(
+                    color = Color.White,
+                    fontFamily = PoppinsFontFamily
+                ),
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize() // ensures the background fills the space
             ) {
                 items(filteredClubs) { club ->
-                    ClubItem(club = club) {
-                        navController.navigate(Screen.ClubDetails.passId(club.id))
-                    }
+                    ClubItem(
+                        club = club,
+                        onClick = {
+                            // Handle navigation here
+                            navController.navigate(Screen.ClubDetails.passId(club.id))
+                        },
+                        onLikeClick = {
+                            // Handle the like action here (e.g., toggle liked state)
+                            println("Liked club: ${club.name}")
+                        },
+                        onBookClick = {
+                            // Handle booking action here
+                            println("Booked club: ${club.name}")
+                        }
+                    )
                 }
             }
-
         }
     }
 }
+
+
 

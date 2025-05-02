@@ -1,6 +1,8 @@
 package com.example.gameclubbooking
 
+import CreateAccountPart1Screen
 import CreateAccountPart2Screen
+import ForgowPasPage
 import OnboardingScreen
 import WelcomeScreen
 import android.os.Bundle
@@ -27,10 +29,22 @@ class MainActivity : ComponentActivity() {
                     WelcomeScreen(navController)
                 }
                 composable("create_account") {
-                    CreateAccountPart2Screen(navController)
+                    CreateAccountPart1Screen(navController)
                 }
                 composable("main") {
                     MainScreen()
+                }
+                composable("create_account2") {
+                    CreateAccountPart2Screen(navController)
+                }
+                composable("forgot_password") {
+                    ForgowPasPage(navController)
+                }
+                composable("search") {
+                    SearchClubScreen(navController)
+                }
+                composable("ereceipt") {
+                    EReceiptScreen(navController)
                 }
             }
         }

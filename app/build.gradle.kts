@@ -53,6 +53,12 @@ android {
 }
 
 dependencies {
+    implementation("androidx.compose.material3:material3:1.2.1") // or the latest
+
+
+    implementation ("com.google.accompanist:accompanist-pager:0.32.0")
+    implementation ("com.google.accompanist:accompanist-pager-indicators:0.32.0")
+
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 

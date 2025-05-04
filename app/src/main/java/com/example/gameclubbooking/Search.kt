@@ -32,112 +32,112 @@ import androidx.navigation.compose.rememberNavController
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
 
 
-@Preview(showBackground = true)
-@Composable
-fun Pre(){
-    val navController = rememberNavController()
-    SearchClubScreen(navController)
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SearchClubScreen(navController: NavController) {
-    var searchQuery by remember { mutableStateOf("") }
-
-    val filteredClubs = sampleClubs.filter { club ->
-        club.name.contains(searchQuery, ignoreCase = true)
-    }
-
-    val backgroundColor = Color(0xFF101828)
-
-    Scaffold(
-        containerColor = backgroundColor, // sets background for scaffold base layer
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Search Clubs",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 60.dp, vertical = 20.dp)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(backgroundColor) // make sure entire content area is dark
-                .padding(16.dp)
-        ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = {
-                    Text(
-                        "Search by club name",
-                        color = Color.White,
-                        fontFamily = PoppinsFontFamily
-                    )
-                },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.White)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.Gray,
-                    focusedLabelColor = Color.White,
-                    cursorColor = Color.White
-                ),
-                textStyle = TextStyle(
-                    color = Color.White,
-                    fontFamily = PoppinsFontFamily
-                ),
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize() // ensures the background fills the space
-            ) {
-                items(filteredClubs) { club ->
-                    ClubItem(
-                        club = club,
-                        onClick = {
-                            // Handle navigation here
-                            navController.navigate(Screen.ClubDetails.passId(club.id))
-                        },
-                        onLikeClick = {
-                            // Handle the like action here (e.g., toggle liked state)
-                            println("Liked club: ${club.name}")
-                        },
-                        onBookClick = {
-                            // Handle booking action here
-                            println("Booked club: ${club.name}")
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-
-
+//@Preview(showBackground = true)
+//@Composable
+//fun Pre(){
+//    val navController = rememberNavController()
+//    SearchClubScreen(navController)
+//}
+//
+//@OptIn(ExperimentalMaterial3Api::class)
+//@Composable
+//fun SearchClubScreen(navController: NavController) {
+//    var searchQuery by remember { mutableStateOf("") }
+//
+//    val filteredClubs = sampleClubs.filter { club ->
+//        club.name.contains(searchQuery, ignoreCase = true)
+//    }
+//
+//    val backgroundColor = Color(0xFF101828)
+//
+//    Scaffold(
+//        containerColor = backgroundColor, // sets background for scaffold base layer
+//        topBar = {
+//            TopAppBar(
+//                title = {
+//                    Text(
+//                        "Search Clubs",
+//                        fontSize = 24.sp,
+//                        fontWeight = FontWeight.Bold,
+//                        textAlign = TextAlign.Center,
+//                        modifier = Modifier.padding(horizontal = 60.dp, vertical = 20.dp)
+//                    )
+//                },
+//                navigationIcon = {
+//                    IconButton(onClick = { navController.popBackStack() }) {
+//                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+//                    }
+//                },
+//                colors = TopAppBarDefaults.topAppBarColors(
+//                    containerColor = backgroundColor,
+//                    titleContentColor = Color.White,
+//                    navigationIconContentColor = Color.White
+//                )
+//            )
+//        }
+//    ) { paddingValues ->
+//        Column(
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .padding(paddingValues)
+//                .background(backgroundColor) // make sure entire content area is dark
+//                .padding(16.dp)
+//        ) {
+//            OutlinedTextField(
+//                value = searchQuery,
+//                onValueChange = { searchQuery = it },
+//                label = {
+//                    Text(
+//                        "Search by club name",
+//                        color = Color.White,
+//                        fontFamily = PoppinsFontFamily
+//                    )
+//                },
+//                leadingIcon = {
+//                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.White)
+//                },
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(54.dp),
+//                colors = OutlinedTextFieldDefaults.colors(
+//                    focusedBorderColor = Color.White,
+//                    unfocusedBorderColor = Color.Gray,
+//                    focusedLabelColor = Color.White,
+//                    cursorColor = Color.White
+//                ),
+//                textStyle = TextStyle(
+//                    color = Color.White,
+//                    fontFamily = PoppinsFontFamily
+//                ),
+//            )
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            LazyColumn(
+//                verticalArrangement = Arrangement.spacedBy(12.dp),
+//                modifier = Modifier.fillMaxSize() // ensures the background fills the space
+//            ) {
+//                items(filteredClubs) { club ->
+//                    ClubItem(
+//                        club = club,
+//                        onClick = {
+//                            // Handle navigation here
+//                            navController.navigate(Screen.ClubDetails.passId(club.id))
+//                        },
+//                        onLikeClick = {
+//                            // Handle the like action here (e.g., toggle liked state)
+//                            println("Liked club: ${club.name}")
+//                        },
+//                        onBookClick = {
+//                            // Handle booking action here
+//                            println("Booked club: ${club.name}")
+//                        }
+//                    )
+//                }
+//            }
+//        }
+//    }
+//}
+//
+//
+//

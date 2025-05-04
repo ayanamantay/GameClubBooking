@@ -55,10 +55,14 @@ android {
 }
 
 dependencies {
+    implementation("com.google.firebase:firebase-auth:22.3.1")
+
     implementation("androidx.compose.material3:material3:1.2.1") // or the latest
     implementation (platform("com.google.firebase:firebase-bom:32.7.0"))
-    implementation("com.google.firebase:firebase-auth:21.0.1")
+//    implementation("com.google.firebase:firebase-auth:21.0.1")
     implementation ("com.google.firebase:firebase-firestore:24.10.0")
+    implementation (libs.firebase.auth.v2231) // Example older version
+
 
 
 

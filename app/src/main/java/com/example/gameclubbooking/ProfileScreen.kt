@@ -198,7 +198,7 @@ fun ProfileScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 ProfileItem("Your Profile") { navController.navigate(Screen.YourProfile.route) }
-                ProfileItem("Payment Methods") { navController.navigate(Screen.PaymentMethods.route) }
+                ProfileItem("Add Cards") { navController.navigate(Screen.AddCard.route) }
                 ProfileItem("Settings") { navController.navigate(Screen.Settings.route) }
                 ProfileItem("Help Center") { navController.navigate(Screen.HelpCenter.route) }
                 ProfileItem("Privacy Policy") { navController.navigate(Screen.PrivacyPolicy.route) }

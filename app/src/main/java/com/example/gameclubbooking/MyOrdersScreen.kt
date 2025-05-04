@@ -1,5 +1,6 @@
 package com.example.gameclubbooking
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
@@ -8,15 +9,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.SnackbarDefaults.backgroundColor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -29,7 +35,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,23 +66,60 @@ class OrdersViewModel : ViewModel() {
     private val _orders = mutableStateListOf<ClubOrder>()
     val orders: List<ClubOrder> get() = _orders
 
-    fun placeOrder(club: GameClub) {
-        val newOrder = ClubOrder(
-            id = _orders.size + 1,
-            club = club,
-            status = OrderStatus.ACTIVE
-        )
-        _orders.add(newOrder)
+    private val _likedClubs = mutableStateListOf<GameClub>()
+    val likedClubs: List<GameClub> get() = _likedClubs
+
+    fun toggleLike(club: GameClub) {
+        val updatedClub = club.copy(isLiked = !club.isLiked)
+        val index = _likedClubs.indexOfFirst { it.id == club.id }
+
+        if (updatedClub.isLiked) {
+            if (index == -1) {
+                _likedClubs.add(updatedClub)
+            }
+        } else {
+            if (index != -1) {
+                _likedClubs.removeAt(index)
+            }
+        }
     }
 
-    // Optional: For future updates (e.g., cancel or complete orders)
-    fun updateStatus(orderId: Int, newStatus: OrderStatus) {
-        val index = _orders.indexOfFirst { it.id == orderId }
-        if (index != -1) {
-            _orders[index] = _orders[index].copy(status = newStatus)
+    fun placeOrder(club: GameClub, cardViewModel: CardViewModel) {
+        if (cardViewModel.cardDetails != null) {
+            val newOrder = ClubOrder(
+                id = _orders.size + 1,
+                club = club,
+                status = OrderStatus.ACTIVE
+            )
+            _orders.add(newOrder)
+        } else {
+            Log.d("Booking", "Please add a card first!")
         }
     }
 }
+
+
+
+
+
+class CardViewModel : ViewModel() {
+    private val _cardDetails = mutableStateOf<CardDetails?>(null)
+    val cardDetails: CardDetails? get() = _cardDetails.value
+
+    fun addCard(cardNumber: String, expiryDate: String, cvv: String, saveCard: Boolean) {
+        val newCard = CardDetails(cardNumber, expiryDate, cvv, saveCard)
+        _cardDetails.value = newCard
+    }
+}
+
+
+data class CardDetails(
+    val cardNumber: String,
+    val expiryDate: String,
+    val cvv: String,
+    val saveCard: Boolean
+)
+
 
 
 enum class OrderStatus {
@@ -93,10 +138,18 @@ val sampleOrders = listOf(
     ClubOrder(2, sampleClubs[1], OrderStatus.COMPLETED),
     ClubOrder(3, sampleClubs[2], OrderStatus.CANCELLED)
 )
+
+
 @Composable
 fun OrdersTab(orders: List<ClubOrder>) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(orders) { order ->
+            val statusColor = when (order.status) {
+                OrderStatus.ACTIVE -> Color.Green
+                OrderStatus.COMPLETED -> Color.Gray
+                OrderStatus.CANCELLED -> Color.Red
+            }
+
             Card(
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -130,7 +183,7 @@ fun OrdersTab(orders: List<ClubOrder>) {
                         Text(
                             "Status: ${order.status.name}",
                             fontSize = 14.sp,
-                            color = Color.LightGray,
+                            color = statusColor,
                             fontFamily = PoppinsFontFamily
                         )
                     }
@@ -139,7 +192,6 @@ fun OrdersTab(orders: List<ClubOrder>) {
         }
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,9 +218,9 @@ fun MyOrdersScreen(navController: NavController, ordersViewModel: OrdersViewMode
                         Icon(Icons.Default.ArrowBack, tint = Color.White, contentDescription = "Back", modifier = Modifier.size(28.dp))
                     }
                 },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color(0xFF101828),
-            )
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF101828),
+                )
             )
         }
     ) { paddingValues ->
@@ -192,14 +244,17 @@ fun MyOrdersScreen(navController: NavController, ordersViewModel: OrdersViewMode
                 }
             }
 
+            val orders = ordersViewModel.orders
+
             when (selectedTab) {
-                0 -> OrdersTab(ordersViewModel.orders.filter { it.status == OrderStatus.ACTIVE })
-                1 -> OrdersTab(ordersViewModel.orders.filter { it.status == OrderStatus.COMPLETED })
-                2 -> OrdersTab(ordersViewModel.orders.filter { it.status == OrderStatus.CANCELLED })
+                0 -> OrdersTab(orders.filter { it.status == OrderStatus.ACTIVE })
+                1 -> OrdersTab(orders.filter { it.status == OrderStatus.COMPLETED })
+                2 -> OrdersTab(orders.filter { it.status == OrderStatus.CANCELLED })
             }
         }
     }
 }
+
 
 
 // --- Preview ---

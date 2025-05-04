@@ -1,5 +1,6 @@
 package com.example.gameclubbooking
 
+import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -83,7 +84,7 @@ sealed class Screen(val route: String) {
 
     // Additional pages
     object YourProfile : Screen("your_profile")
-    object PaymentMethods : Screen("payment_methods")
+    object AddCard : Screen("addCard")
     object MyClubs : Screen("my_clubs")
     object Settings : Screen("settings")
     object HelpCenter : Screen("help_center")
@@ -104,17 +105,12 @@ data class BottomNavItem(
     val screen: Screen
 )
 
-val HomeBackgroundColor = Color(0xFF0A192F)
-val CardColor = Color(0xFF112240)
-val ButtonGreen = Color(0xFF4CAF50)
 val TextWhite = Color.White
 
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
-//    val ordersViewModel: OrdersViewModel = viewModel()
-
 
     val items = listOf(
         BottomNavItem("Home", Icons.Default.Home, Screen.Home),
@@ -141,16 +137,17 @@ fun MainScreen() {
             }
 
             composable(Screen.MyOrders.route) { MyOrdersScreen(navController) }
-            composable("liked") {
-                LikedClubsScreen(
-                    clubs = sampleClubs, // pass full list, it will filter internally
-                    onLikeClick = { /* optional like toggle */ }
-                )
+            composable("liked") { backStackEntry ->
+                val navController = rememberNavController() // Use a new instance of NavController
+                LikedClubsScreen(navController = navController) // Pass NavController to the screen
             }
 
 
+//            composable("search") { SearchClubScreen(navController) }
+            composable("ereceipt") { EReceiptScreen(navController) }
+
+
             composable(Screen.Tournaments.route) {
-                // Pass the sampleTournaments list to TournamentsScreen
                 TournamentsScreen(tournaments = sampleTournaments)
             }
             composable(Screen.Profile.route) { ProfileScreen(navController) }
@@ -160,7 +157,6 @@ fun MainScreen() {
             composable(Screen.Notifications.route) { NotificationScreen(navController) }
             composable(Screen.PasswordManager.route) { PasswordManagerScreen(navController) }
             composable(Screen.YourProfile.route) { YourProfileScreen(navController) }
-            composable(Screen.PaymentMethods.route) { EReceiptScreen(navController) }
             composable(Screen.MyClubs.route) { MyClubsScreen(navController) }
             composable(Screen.HelpCenter.route) { HelpCenterScreen(navController) }
             composable(Screen.PrivacyPolicy.route) { PrivacyPolicyScreen(navController) }
@@ -179,25 +175,27 @@ fun MainScreen() {
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
-    val scrollState = rememberScrollState()
+    val ordersViewModel: OrdersViewModel = viewModel()
+    val cardViewModel: CardViewModel = viewModel()
 
-    // Simulate clubs list with local state
-    var clubs by remember { mutableStateOf(sampleClubs) }
+    val clubs = sampleClubs
 
-    // Handle like and book
     fun toggleLike(club: GameClub) {
-        clubs = clubs.map {
-            if (it.id == club.id) it.copy(isLiked = !it.isLiked) else it
+        ordersViewModel.toggleLike(club)  // Toggle the like state and add/remove from liked clubs
+    }
+
+    fun bookClub(club: GameClub, cardViewModel: CardViewModel) {
+        if (cardViewModel.cardDetails == null) {
+            navController.navigate(Screen.AddCard.route) // Navigate to Add Card if no card is added
+        } else {
+            ordersViewModel.placeOrder(club, cardViewModel) // Proceed with booking
+            navController.navigate(Screen.MyOrders.route) // Navigate to orders screen after booking
         }
     }
 
-    fun bookClub(club: GameClub) {
-        println("Booked: ${club.name}") // Simulate booking
-    }
 
     Scaffold(
         containerColor = Color(0xFF0A192F),
@@ -219,16 +217,16 @@ fun HomeScreen(navController: NavController) {
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = PoppinsFontFamily,
-                            color = TextWhite
+                            color = Color.White
                         )
                     }
                 },
                 actions = {
                     IconButton(onClick = { navController.navigate("search") }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = TextWhite)
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.White)
                     }
                     IconButton(onClick = { navController.navigate("ereceipt") }) {
-                        Icon(Icons.Default.Star, contentDescription = "Subs", tint = TextWhite)
+                        Icon(Icons.Default.Star, contentDescription = "Subscriptions", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0A192F))
@@ -239,8 +237,9 @@ fun HomeScreen(navController: NavController) {
             modifier = Modifier
                 .padding(paddingValues)
                 .background(Color(0xFF0A192F))
-                .verticalScroll(scrollState)
+                .verticalScroll(rememberScrollState())
         ) {
+            // News Banner Section
             Spacer(modifier = Modifier.height(16.dp))
 
             val newsItems = listOf(
@@ -255,18 +254,18 @@ fun HomeScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Club Listing Section
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 clubs.forEach { club ->
                     ClubItem(
                         club = club,
                         onClick = { navController.navigate(Screen.ClubDetails.passId(club.id)) },
-                        onLikeClick = { toggleLike(club) },
-                        onBookClick = {
-                            bookClub(club)
-                            navController.navigate(Screen.MyOrders.route)
-                        }
+                        onLikeClick = { ordersViewModel.toggleLike(club) },
+                        onBookClick = { bookClub(club, cardViewModel) }, // Pass cardViewModel to bookClub
+                        ordersViewModel = ordersViewModel,
+                        cardViewModel = cardViewModel
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+
                 }
             }
         }
@@ -277,8 +276,10 @@ fun HomeScreen(navController: NavController) {
 fun ClubItem(
     club: GameClub,
     onClick: () -> Unit,
-    onLikeClick: () -> Unit,
-    onBookClick: () -> Unit
+    onLikeClick: (GameClub) -> Unit,
+    onBookClick: () -> Unit,
+    ordersViewModel: OrdersViewModel,
+    cardViewModel: CardViewModel
 ) {
     Card(
         modifier = Modifier
@@ -303,7 +304,6 @@ fun ClubItem(
                 text = club.name,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                fontFamily = PoppinsFontFamily,
                 color = Color.White,
                 modifier = Modifier.padding(horizontal = 12.dp)
             )
@@ -315,51 +315,36 @@ fun ClubItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row {
-                    IconButton(onClick = onLikeClick) {
+                    IconButton(onClick = { onLikeClick(club) }) {
                         Icon(
                             imageVector = if (club.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Like",
-                            tint = if (club.isLiked) Color.Red else Color.White
+                            tint = if (club.isLiked) Color.Red else Color.Gray
                         )
-                    }
-                    IconButton(onClick = { /* TODO: Add comments logic */ }) {
-                        Icon(
-                            Icons.Default.Email,
-                            contentDescription = "Comments",
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = { /* TODO: Add send/share logic */ }) {
-                        Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
                     }
                 }
 
-                Button(
-                    onClick = onBookClick,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                ) {
-                    Text("Book Now", fontFamily = PoppinsFontFamily, color = Color.White)
-                }
+                // Book Now Button
+                BookNowButton(onClick = onBookClick) // Correctly call onBookClick
             }
         }
     }
 }
 
+
 @Composable
-fun BookNowButton(club: GameClub, ordersViewModel: OrdersViewModel) {
+fun BookNowButton(onClick: () -> Unit) {
     Button(
-        onClick = { ordersViewModel.placeOrder(club) },
+        onClick = onClick,
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
     ) {
-        Text(
-            "Book Now",
-            fontFamily = PoppinsFontFamily,
-            color = Color.White
-        )
+        Text("Book Now", color = Color.White)
     }
 }
+
+
+
 
 @Composable
 
@@ -390,7 +375,6 @@ fun NewsBanner(newsTitle: String, onClick: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class)
 
 @Composable
 fun NewsBannerPager(newsList: List<String>, onClick: (String) -> Unit) {
@@ -478,13 +462,12 @@ fun CustomBottomNavigationBar(
     }
 }
 
-
 @Composable
-fun LikedClubsScreen(
-    clubs: List<GameClub>,
-    onLikeClick: (GameClub) -> Unit
-) {
-    val likedClubs = clubs.filter { it.isLiked }
+fun LikedClubsScreen(navController: NavController) {
+    val ordersViewModel: OrdersViewModel = viewModel()  // Get the OrdersViewModel instance
+    val cardViewModel: CardViewModel = viewModel()  // Get the CardViewModel instance
+
+    val likedClubs = ordersViewModel.likedClubs // Access the list of liked clubs
 
     Column(
         modifier = Modifier
@@ -495,22 +478,25 @@ fun LikedClubsScreen(
             "Liked Clubs",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
-            fontFamily = PoppinsFontFamily,
             color = Color.White,
             modifier = Modifier.padding(20.dp)
         )
+
         LazyColumn {
             items(likedClubs) { club ->
                 ClubItem(
                     club = club,
-                    onClick = {},
-                    onBookClick = { println("Booked: ${club.name}") },
-                    onLikeClick = { onLikeClick(club) }
+                    onClick = { navController.navigate(Screen.ClubDetails.passId(club.id)) },  // Navigate to club details
+                    onLikeClick = { ordersViewModel.toggleLike(club) },  // Remove from liked clubs
+                    onBookClick = { /* Handle booking logic */ },
+                    ordersViewModel = ordersViewModel,  // Pass ordersViewModel to handle booking
+                    cardViewModel = cardViewModel  // Pass cardViewModel to handle booking logic
                 )
             }
         }
     }
 }
+
 
 
 data class Tournament(

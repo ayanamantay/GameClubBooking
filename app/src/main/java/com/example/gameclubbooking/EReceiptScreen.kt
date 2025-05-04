@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -34,8 +35,8 @@ import androidx.navigation.compose.rememberNavController
 @Composable
 fun Prcae(){
     val navController = rememberNavController()
-//    EReceiptScreen(navController)
-    AddCardScreen(navController)
+    EReceiptScreen(navController)
+//    AddCardScreen(navController)
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,132 +140,3 @@ fun ReceiptField(label: String, value: String, statusColor: Color = Color(0xFFCB
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AddCardScreen(navController: NavController) {
-    var cardNumber by remember { mutableStateOf("") }
-    var expiryDate by remember { mutableStateOf("") }
-    var cvv by remember { mutableStateOf("") }
-    var saveCard by remember { mutableStateOf(false) }
-
-    Scaffold(
-        containerColor = Color(0xFF101828),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Add Card",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 100.dp)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF101828))
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(170.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF1F2A37))
-            )
-
-            OutlinedTextField(
-                value = cardNumber,
-                onValueChange = { cardNumber = it },
-                label = { Text("Card Number") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = TextStyle(color = Color.White),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = Color.White,
-                    focusedLabelColor = Color.LightGray,
-                    unfocusedLabelColor = Color.Gray,
-                    focusedContainerColor = Color(0xFF1F2A37),
-                    unfocusedContainerColor = Color(0xFF1F2A37)
-                )
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = expiryDate,
-                    onValueChange = { expiryDate = it },
-                    label = { Text("Expiry Date (MM/YY)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                    textStyle = TextStyle(color = Color.White),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.Gray,
-                        cursorColor = Color.White,
-                        focusedLabelColor = Color.LightGray,
-                        unfocusedLabelColor = Color.Gray,
-                        focusedContainerColor = Color(0xFF1F2A37),
-                        unfocusedContainerColor = Color(0xFF1F2A37)
-                    )
-                )
-
-                OutlinedTextField(
-                    value = cvv,
-                    onValueChange = { cvv = it },
-                    label = { Text("CVV") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                    modifier = Modifier.weight(1f),
-                    textStyle = TextStyle(color = Color.White),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.White,
-                        unfocusedBorderColor = Color.Gray,
-                        cursorColor = Color.White,
-                        focusedLabelColor = Color.LightGray,
-                        unfocusedLabelColor = Color.Gray,
-                        focusedContainerColor = Color(0xFF1F2A37),
-                        unfocusedContainerColor = Color(0xFF1F2A37)
-                    )
-                )
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = saveCard,
-                    onCheckedChange = { saveCard = it },
-                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF4CAF50))
-                )
-                Text("Save Card", color = Color.White)
-            }
-
-            Button(
-                onClick = {
-                    println("Card Added: $cardNumber, $expiryDate, $cvv, Save: $saveCard")
-                    navController.popBackStack()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-            ) {
-                Text("Add Card")
-            }
-        }
-    }
-}

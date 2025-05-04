@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
 
             NavHost(
                 navController = navController,
-                startDestination = "onboarding" // Start from onboarding
+                startDestination = "main" // Start from onboarding
             ) {
                 // Onboarding Screen
                 composable("onboarding") {
@@ -47,16 +47,11 @@ class MainActivity : ComponentActivity() {
                 composable("forgot_password") {
                     ForgowPasPage(navController)
                 }
-
-                // Search Screen (Optional)
-                composable("search") {
-                    SearchClubScreen(navController)
+                composable("create_account2") {
+                    CreateAccountPart2Screen(navController)
                 }
 
-                // E-Receipt Screen (Optional)
-                composable("ereceipt") {
-                    EReceiptScreen(navController)
-                }
+
             }
         }
     }

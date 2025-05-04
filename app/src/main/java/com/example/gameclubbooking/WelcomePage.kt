@@ -41,6 +41,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.gameclubbooking.FirebaseAuthManager
 import com.example.gameclubbooking.R
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 
 @Preview()
@@ -125,9 +127,6 @@ fun WelcomeScreen(navController: NavHostController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
-
-
 
     Column(
         modifier = Modifier
@@ -639,7 +638,7 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
         // Register Button
         Button(
             onClick = {
-                FirebaseAuthManager.login(
+                FirebaseAuthManager.register(
                     email = email,
                     password = password,
                     onSuccess = { navController.navigate("main") },
@@ -670,12 +669,12 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(32.dp))
     }
-}
-@Composable
+}@Composable
 fun ForgowPasPage(navController: NavHostController) {
     val scrollState = rememberScrollState()
     var email by remember { mutableStateOf("") }
     var message by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -712,7 +711,6 @@ fun ForgowPasPage(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // ✅ Email Input Field
         CustomInputField(
             label = "Email",
             text = email,
@@ -722,13 +720,18 @@ fun ForgowPasPage(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // ✅ Send Link Button
         Button(
             onClick = {
                 FirebaseAuthManager.sendPasswordReset(
                     email = email,
                     onSuccess = {
                         message = "Reset link sent successfully!"
+                        coroutineScope.launch {
+                            delay(2000)
+                            navController.navigate("welcome") {
+                                popUpTo("forgot_password") { inclusive = true }
+                            }
+                        }
                     },
                     onError = { error ->
                         message = error
@@ -756,7 +759,7 @@ fun ForgowPasPage(navController: NavHostController) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = it,
-                color = if (it.contains("success")) Color.Green else Color.Red,
+                color = if (it.contains("success", ignoreCase = true)) Color.Green else Color.Red,
                 fontSize = 14.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
@@ -765,4 +768,5 @@ fun ForgowPasPage(navController: NavHostController) {
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
+
 

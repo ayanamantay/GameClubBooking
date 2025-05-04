@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.gameclubbooking.FirebaseAuthManager
 import com.example.gameclubbooking.R
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
 
@@ -47,7 +48,7 @@ import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
     fun Screens(){
         val navController = rememberNavController()
 //        OnboardingScreen(navController)
-//        WelcomeScreen(navController)
+        WelcomeScreen(navController)
 //        CreateAccountPart1Screen()
 //        CreateAccountPart2Screen(navController)
 //        ForgowPasPage(navController)
@@ -121,6 +122,13 @@ fun OnboardingScreen(navController: NavHostController) {
 
 @Composable
 fun WelcomeScreen(navController: NavHostController) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -155,11 +163,11 @@ fun WelcomeScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        CustomInputField(label = "Email address")
+        CustomInputField(label = "Email address", text = email, onValueChange = { email = it })
         Spacer(modifier = Modifier.height(16.dp))
 
 
-        CustomInputField(label = "Password")
+        CustomInputField(label = "Password", text = password, onValueChange = { password = it })
         Spacer(modifier = Modifier.height(16.dp))
 
 
@@ -178,7 +186,14 @@ fun WelcomeScreen(navController: NavHostController) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { navController.navigate("main") },
+            onClick = {
+                FirebaseAuthManager.login(
+                    email = email,
+                    password = password,
+                    onSuccess = { navController.navigate("main") },
+                    onError = { error -> errorMessage = error }
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp)
@@ -193,6 +208,15 @@ fun WelcomeScreen(navController: NavHostController) {
                 fontFamily = PoppinsFontFamily,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        errorMessage?.let {
+            Text(
+                it,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
 
@@ -266,7 +290,8 @@ fun WelcomeScreen(navController: NavHostController) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                "Don't have an account? ",
+
+         "Don't have an account? ",
                 fontFamily = PoppinsFontFamily,
                 fontSize = 14.sp,
                 color = Color.White
@@ -283,11 +308,13 @@ fun WelcomeScreen(navController: NavHostController) {
     }
 }
 
-
 @Composable
 fun CreateAccountPart1Screen(navController: NavController? = null) {
     val genderOptions = listOf("Male", "Female")
     var gender by remember { mutableStateOf("Male") }
+    var name by remember { mutableStateOf("") }
+    var surname by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
 
     val dayList = (1..31).map { it.toString() }
     val monthList = listOf(
@@ -331,9 +358,17 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 32.dp)
         )
 
-        CustomInputField(label = "Name")
+        CustomInputField(
+            label = "Name",
+            text = name,
+            onValueChange = { name = it } // Update the state when the text changes
+        )
         Spacer(modifier = Modifier.height(16.dp))
-        CustomInputField(label = "Surname")
+        CustomInputField(
+            label = "Surname",
+            text = surname,
+            onValueChange = { surname = it }
+        )
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
@@ -371,7 +406,12 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-        CustomInputField(label = "Phone Number", keyboardType = KeyboardType.Phone)
+        CustomInputField(
+            label = "Phone Number",
+            text = phoneNumber,
+            onValueChange = { phoneNumber = it },
+            keyboardType = KeyboardType.Phone
+        )
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
@@ -446,12 +486,17 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
     }
 }
 @Composable
-fun CustomInputField(label: String, keyboardType: KeyboardType = KeyboardType.Text) {
+fun CustomInputField(
+    label: String,
+    text: String,  // Added this parameter to bind the value
+    onValueChange: (String) -> Unit,
+     keyboardType: KeyboardType = KeyboardType.Text
+) {
     var value by remember { mutableStateOf("") }
 
     OutlinedTextField(
-        value = value,
-        onValueChange = { value = it },
+        value = text,
+        onValueChange = { newText -> onValueChange(newText) },
         label = {
             Text(
                 text = label,
@@ -524,6 +569,14 @@ fun DropdownSelector(
 @Composable
 fun CreateAccountPart2Screen(navController: NavHostController) {
     val scrollState = rememberScrollState()
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var confirmPassword by remember { mutableStateOf("") }
+
+
+    CustomInputField(label = "Email address", text = email, onValueChange = { email = it })
+    CustomInputField(label = "Password", text = password, onValueChange = { password = it })
 
     Column(
         modifier = Modifier
@@ -557,21 +610,41 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
         )
 
         // Email
-        CustomInputField(label = "Email", keyboardType = KeyboardType.Email)
+        CustomInputField(
+            label = "Email",
+            text = email,
+            onValueChange = { email = it },
+            keyboardType = KeyboardType.Email
+        )
         Spacer(modifier = Modifier.height(20.dp))
 
         // Password
-        CustomInputField(label = "Password", keyboardType = KeyboardType.Password)
+        CustomInputField(
+            label = "Password",
+            text = password,
+            onValueChange = { password = it },
+            keyboardType = KeyboardType.Password
+        )
         Spacer(modifier = Modifier.height(20.dp))
 
         // Confirm Password
-        CustomInputField(label = "Confirm Password", keyboardType = KeyboardType.Password)
+        CustomInputField(
+            label = "Confirm Password",
+            text = confirmPassword,
+            onValueChange = { confirmPassword = it },
+            keyboardType = KeyboardType.Password
+        )
         Spacer(modifier = Modifier.height(40.dp))
 
         // Register Button
         Button(
             onClick = {
-                navController.navigate("main")
+                FirebaseAuthManager.login(
+                    email = email,
+                    password = password,
+                    onSuccess = { navController.navigate("main") },
+                    onError = { error -> errorMessage = error }
+                )
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -581,7 +654,9 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
                 containerColor = Color(0xFF4CAF50),
                 contentColor = Color.White
             )
+
         ) {
+
             Text(
                 text = "Register",
                 fontFamily = PoppinsFontFamily,
@@ -589,14 +664,18 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
                 fontWeight = FontWeight.Medium
             )
         }
+        errorMessage?.let {
+            Text(it, color = Color.Red, fontSize = 14.sp)
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
-
 @Composable
 fun ForgowPasPage(navController: NavHostController) {
     val scrollState = rememberScrollState()
+    var email by remember { mutableStateOf("") }
+    var message by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -633,15 +712,28 @@ fun ForgowPasPage(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Email Input
-        CustomInputField(label = "Email", keyboardType = KeyboardType.Email)
+        // ✅ Email Input Field
+        CustomInputField(
+            label = "Email",
+            text = email,
+            onValueChange = { email = it },
+            keyboardType = KeyboardType.Email
+        )
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Send Link Button
+        // ✅ Send Link Button
         Button(
             onClick = {
-                // TODO: implement action or navigate
+                FirebaseAuthManager.sendPasswordReset(
+                    email = email,
+                    onSuccess = {
+                        message = "Reset link sent successfully!"
+                    },
+                    onError = { error ->
+                        message = error
+                    }
+                )
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -657,6 +749,16 @@ fun ForgowPasPage(navController: NavHostController) {
                 fontFamily = PoppinsFontFamily,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
+            )
+        }
+
+        message?.let {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = it,
+                color = if (it.contains("success")) Color.Green else Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
 

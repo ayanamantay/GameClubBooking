@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -58,11 +60,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
-
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.google.accompanist.pager.ExperimentalPagerApi
+
 
 
 @Preview(showBackground = true)
@@ -95,11 +97,13 @@ sealed class Screen(val route: String) {
     }
 
 }
-    data class BottomNavItem(
+
+data class BottomNavItem(
     val title: String,
     val icon: ImageVector,
     val screen: Screen
 )
+
 val HomeBackgroundColor = Color(0xFF0A192F)
 val CardColor = Color(0xFF112240)
 val ButtonGreen = Color(0xFF4CAF50)
@@ -123,9 +127,9 @@ fun MainScreen() {
     Scaffold(
         containerColor = Color(0xFF101828), // Example dark theme background
 
-            bottomBar = {
-                CustomBottomNavigationBar(navController = navController, items = items)
-            }
+        bottomBar = {
+            CustomBottomNavigationBar(navController = navController, items = items)
+        }
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -174,7 +178,6 @@ fun MainScreen() {
         }
     }
 }
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -320,7 +323,11 @@ fun ClubItem(
                         )
                     }
                     IconButton(onClick = { /* TODO: Add comments logic */ }) {
-                        Icon(Icons.Default.Email, contentDescription = "Comments", tint = Color.White)
+                        Icon(
+                            Icons.Default.Email,
+                            contentDescription = "Comments",
+                            tint = Color.White
+                        )
                     }
                     IconButton(onClick = { /* TODO: Add send/share logic */ }) {
                         Icon(Icons.Default.Send, contentDescription = "Send", tint = Color.White)
@@ -382,12 +389,12 @@ fun NewsBanner(newsTitle: String, onClick: () -> Unit) {
         }
     }
 }
+
 @OptIn(ExperimentalPagerApi::class, ExperimentalFoundationApi::class)
 
 @Composable
 fun NewsBannerPager(newsList: List<String>, onClick: (String) -> Unit) {
     val pagerState = rememberPagerState()
-
     Column {
         HorizontalPager(
             count = newsList.size,
@@ -422,7 +429,7 @@ fun CustomBottomNavigationBar(
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     Surface(
         modifier = Modifier
-    .fillMaxWidth()
+            .fillMaxWidth()
             .height(70.dp)
             .shadow(10.dp, shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
         color = Color(0xFF181818), // dark grey-blue (different from home bg)
@@ -515,7 +522,13 @@ data class Tournament(
 )
 
 val sampleTournaments = listOf(
-    Tournament(1, "Valorant Night", "Join the 5v5 tournament!", "May 18, 2025", R.drawable.valorant),
+    Tournament(
+        1,
+        "Valorant Night",
+        "Join the 5v5 tournament!",
+        "May 18, 2025",
+        R.drawable.valorant
+    ),
     Tournament(2, "FIFA Showdown", "Compete in FIFA 24!", "June 3, 2025", R.drawable.fifa),
     Tournament(3, "CS:GO Masters", "Clash with top CS:GO teams", "June 15, 2025", R.drawable.csgo)
 )

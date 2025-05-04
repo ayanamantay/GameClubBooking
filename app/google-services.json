@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "891173398129",
+    "project_id": "gameclubbooking",
+    "storage_bucket": "gameclubbooking.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:891173398129:android:41605add9fbd44a2915dd0",
+        "android_client_info": {
+          "package_name": "com.example.gameclubbooking"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjQqvCTeZQP3fevHXbh1O4KOe-EpRp6kU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,3 +1,4 @@
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -35,26 +36,33 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.gameclubbooking.FirebaseAuthManager
 import com.example.gameclubbooking.R
+import com.example.gameclubbooking.UserInfoViewModel
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 
 @Preview()
 @Composable
-    fun Screens(){
-        val navController = rememberNavController()
+fun Screens() {
+    val navController = rememberNavController()
 //        OnboardingScreen(navController)
-        WelcomeScreen(navController)
+    WelcomeScreen(navController)
 //        CreateAccountPart1Screen()
 //        CreateAccountPart2Screen(navController)
 //        ForgowPasPage(navController)
-    }
+}
+
 @Composable
 fun OnboardingScreen(navController: NavHostController) {
     Box(
@@ -79,14 +87,7 @@ fun OnboardingScreen(navController: NavHostController) {
                     .size(160.dp)
                     .clip(RoundedCornerShape(20.dp))
             )
-//
-//            Text(
-//                text = "UNIGAME",
-//                fontSize = 28.sp,
-//                fontWeight = FontWeight.Bold,
-//                color = Color.White,
-//                modifier = Modifier.padding(top = 16.dp)
-//            )
+
 
             Text(
                 text = "A next-gen gaming platform connecting gamers, clubs, and tournaments in Kazakhstan.\n\n" +
@@ -111,10 +112,12 @@ fun OnboardingScreen(navController: NavHostController) {
                     contentColor = Color.White
                 )
             ) {
-                Text(text = "GET STARTED",   color = Color.White,
+                Text(
+                    text = "GET STARTED", color = Color.White,
                     fontFamily = PoppinsFontFamily,
                     fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp)
+                    fontSize = 16.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -176,7 +179,7 @@ fun WelcomeScreen(navController: NavHostController) {
             fontSize = 14.sp,
             fontFamily = PoppinsFontFamily,
             modifier = Modifier
-                .clickable {navController.navigate("forgot_password") }
+                .clickable { navController.navigate("forgot_password") }
                 .fillMaxWidth()
                 .padding(end = 4.dp)
                 .wrapContentWidth(Alignment.End)
@@ -290,7 +293,7 @@ fun WelcomeScreen(navController: NavHostController) {
         ) {
             Text(
 
-         "Don't have an account? ",
+                "Don't have an account? ",
                 fontFamily = PoppinsFontFamily,
                 fontSize = 14.sp,
                 color = Color.White
@@ -308,7 +311,10 @@ fun WelcomeScreen(navController: NavHostController) {
 }
 
 @Composable
-fun CreateAccountPart1Screen(navController: NavController? = null) {
+fun CreateAccountPart1Screen(
+    navController: NavController? = null,
+    userInfoViewModel: UserInfoViewModel = viewModel()
+) {
     val genderOptions = listOf("Male", "Female")
     var gender by remember { mutableStateOf("Male") }
     var name by remember { mutableStateOf("") }
@@ -322,9 +328,13 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
     )
     val yearList = (1960..2025).map { it.toString() }
 
+    // Retain the birth date fields but don't pass them to ViewModel
     var selectedDay by remember { mutableStateOf("Day") }
     var selectedMonth by remember { mutableStateOf("Month") }
     var selectedYear by remember { mutableStateOf("Year") }
+
+    var cityAndAddress by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
 
     val scrollState = rememberScrollState()
 
@@ -354,20 +364,26 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
             fontFamily = PoppinsFontFamily,
             color = Color.White,
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 32.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 32.dp)
         )
 
+        // Custom Input Fields
         CustomInputField(
             label = "Name",
             text = name,
-            onValueChange = { name = it } // Update the state when the text changes
+            onValueChange = { name = it }
         )
+
         Spacer(modifier = Modifier.height(16.dp))
+
         CustomInputField(
             label = "Surname",
             text = surname,
             onValueChange = { surname = it }
         )
+
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
@@ -405,12 +421,31 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
         CustomInputField(
             label = "Phone Number",
             text = phoneNumber,
             onValueChange = { phoneNumber = it },
             keyboardType = KeyboardType.Phone
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        CustomInputField(
+            label = "City and Address",
+            text = cityAndAddress,
+            onValueChange = { cityAndAddress = it }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        CustomInputField(
+            label = "Email",
+            text = email,
+            onValueChange = { email = it },
+            keyboardType = KeyboardType.Email
+        )
+
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
@@ -446,7 +481,40 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
         Spacer(modifier = Modifier.height(40.dp))
 
         Button(
-            onClick = { navController?.navigate("create_account2") },
+            onClick = {
+                // Simplified validation, skipping birth date validation
+                val isDataValid =
+                    name.isNotBlank() && surname.isNotBlank() && phoneNumber.isNotBlank() && email.isNotBlank()
+
+                if (isDataValid) {
+                    try {
+                        // Ensure ViewModel update is happening properly without birth date
+                        userInfoViewModel.updateUserInfo(
+                            name = name,
+                            surname = surname,
+                            phoneNumber = phoneNumber,
+                            gender = gender,
+                            cityAndAddress = cityAndAddress,
+                            email = email
+                        )
+                        Log.d("Navigation", "ViewModel updated successfully")
+
+                        // Navigate if everything is valid
+                        navController?.navigate("create_account2") ?: run {
+                            Log.d("Navigation", "NavController is null, cannot navigate")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(
+                            "Error",
+                            "Error occurred while updating user info or navigating: ${e.message}"
+                        )
+                    }
+                } else {
+                    // Log the invalid input issue
+                    Log.d("Navigation", "Invalid input data!")
+                    // Optionally, show a toast or error message
+                }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp)
@@ -456,10 +524,7 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
                 contentColor = Color.White
             )
         ) {
-            Text(
-                text = "Continue",
-                fontFamily = PoppinsFontFamily
-            )
+            Text("Continue", fontFamily = PoppinsFontFamily)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -470,26 +535,23 @@ fun CreateAccountPart1Screen(navController: NavController? = null) {
                 .fillMaxWidth()
                 .height(54.dp)
                 .clip(RoundedCornerShape(16.dp)),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.White
-            ),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
             border = BorderStroke(1.dp, Color.White)
         ) {
-            Text(
-                text = "Skip",
-                fontFamily = PoppinsFontFamily
-            )
+            Text("Skip", fontFamily = PoppinsFontFamily)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
     }
 }
+
+
 @Composable
 fun CustomInputField(
     label: String,
     text: String,  // Added this parameter to bind the value
     onValueChange: (String) -> Unit,
-     keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text
 ) {
     var value by remember { mutableStateOf("") }
 
@@ -505,7 +567,7 @@ fun CustomInputField(
         },
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp),
+            .height(64.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color.White,
             unfocusedBorderColor = Color.Gray,
@@ -669,7 +731,9 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(32.dp))
     }
-}@Composable
+}
+
+@Composable
 fun ForgowPasPage(navController: NavHostController) {
     val scrollState = rememberScrollState()
     var email by remember { mutableStateOf("") }

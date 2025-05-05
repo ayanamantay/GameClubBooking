@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.firebase.firestore.ktx)
+    implementation(libs.androidx.media3.exoplayer.dash)
 
     // Compose Tooling (for previews)
     debugImplementation(libs.androidx.ui.tooling)

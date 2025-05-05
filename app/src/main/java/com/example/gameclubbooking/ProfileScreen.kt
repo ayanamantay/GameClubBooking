@@ -78,6 +78,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
+import java.time.LocalDate
+import java.time.Period
 
 
 @SuppressLint("SuspiciousIndentation")
@@ -93,37 +95,66 @@ fun MyPreview() {
 //        PasswordManagerScreen(navController)
 
 //        InviteFriendsScreen(navController)
-        PrivacyPolicyScreen(navController)
+    PrivacyPolicyScreen(navController)
 }
+
+class UserInfoViewModel : ViewModel() {
+    var userInfo by mutableStateOf(
+        UserProfile("", "", "", "Male", 1, 1, 2000)
+    )
+        private set
+
+    fun updateUserInfo(
+        name: String,
+        surname: String,
+        phoneNumber: String,
+        gender: String,
+        email: String = "",
+        cityAndAddress: String = ""
+    ) {
+        // No need to pass birth day, month, or year anymore
+        userInfo = UserProfile(
+            name = name,
+            surname = surname,
+            phoneNumber = phoneNumber,
+            gender = gender,
+            birthDay = 0, // Default value since birth date isn't saved
+            birthMonth = 0, // Default value
+            birthYear = 0, // Default value
+            email = email,
+            cityAndAddress = cityAndAddress
+        )
+    }
+}
+
 data class UserProfile(
     val name: String,
     val surname: String,
     val phoneNumber: String,
     val gender: String,
-    val age: Int,
-    val cityAndAddress: String,
-    val email: String
-)
-
-class ProfileViewModel : ViewModel() {
-    private val _user = mutableStateOf(
-        UserProfile(
-            name = "John",
-            surname = "Doe",
-            phoneNumber = "+123 456 789",
-            gender = "Male",
-            age = 30,
-            cityAndAddress = "Almaty, Kazakhstan",
-            email = "john@example.com"
-        )
-    )
-    val user: State<UserProfile> = _user
+    val birthDay: Int,
+    val birthMonth: Int,
+    val birthYear: Int,
+    val email: String = "",
+    val cityAndAddress: String = ""
+) {
+    val age: Int
+        get() {
+            val today = LocalDate.now()
+            val birthDate = LocalDate.of(birthYear, birthMonth, birthDay)
+            return Period.between(birthDate, today).years
+        }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(
+    navController: NavController,
+    userInfoViewModel: UserInfoViewModel = viewModel()
+) {
     val backgroundColor = Color(0xFF101828)
+    val userInfo = userInfoViewModel.userInfo
 
     Scaffold(
         containerColor = backgroundColor,
@@ -177,14 +208,19 @@ fun ProfileScreen(navController: NavController) {
             ) {
                 // You can put Image(...) here later
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(Icons.Default.Person, contentDescription = "Profile Picture", tint = Color.White, modifier = Modifier.size(50.dp))
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Profile Picture",
+                        tint = Color.White,
+                        modifier = Modifier.size(50.dp)
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "AMAN MUSTAFIYEV",
+                text = userInfo.name + " " + userInfo.surname,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = PoppinsFontFamily,
@@ -202,8 +238,7 @@ fun ProfileScreen(navController: NavController) {
                 ProfileItem("Settings") { navController.navigate(Screen.Settings.route) }
                 ProfileItem("Help Center") { navController.navigate(Screen.HelpCenter.route) }
                 ProfileItem("Privacy Policy") { navController.navigate(Screen.PrivacyPolicy.route) }
-                ProfileItem("Invite Friends") { navController.navigate(Screen.InviteFriends.route) }
-                ProfileItem("Log out") { navController.navigate("welcome")              }
+                ProfileItem("Log out") { navController.navigate("welcome") }
             }
         }
     }
@@ -230,11 +265,13 @@ fun ProfileItem(title: String, onClick: () -> Unit) {
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun YourProfileScreen(navController: NavController, viewModel: ProfileViewModel = viewModel()) {
-    val user = viewModel.user.value
+fun YourProfileScreen(
+    navController: NavController,
+    userInfoViewModel: UserInfoViewModel = viewModel()
+) {
+    val userInfo = userInfoViewModel.userInfo
     val backgroundColor = Color(0xFF101828)
 
     Scaffold(
@@ -253,7 +290,11 @@ fun YourProfileScreen(navController: NavController, viewModel: ProfileViewModel 
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(
+                            Icons.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -273,7 +314,6 @@ fun YourProfileScreen(navController: NavController, viewModel: ProfileViewModel 
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Avatar Placeholder
             Surface(
                 modifier = Modifier
                     .size(100.dp)
@@ -292,23 +332,32 @@ fun YourProfileScreen(navController: NavController, viewModel: ProfileViewModel 
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Profile Fields
-            ProfileField("Name", user.name)
-            ProfileField("Surname", user.surname)
-            ProfileField("Phone", user.phoneNumber)
-            ProfileField("Gender", user.gender)
-            ProfileField("Age", user.age.toString())
-            ProfileField("City and Address", user.cityAndAddress)
-            ProfileField("Email", user.email)
+            // Show only available data
+            ProfileField("Name", userInfo.name)
+            ProfileField("Surname", userInfo.surname)
+            ProfileField("Phone", userInfo.phoneNumber)
+            ProfileField("Gender", userInfo.gender)
+            ProfileField("Age", userInfo.age.toString())
+            if (userInfo.cityAndAddress.isNotBlank()) {
+                ProfileField("Address", userInfo.cityAndAddress)
+            }
+
+            if (userInfo.email.isNotBlank()) {
+                ProfileField("Email", userInfo.email)
+            }
+
         }
     }
 }
 
+
 @Composable
 fun ProfileField(label: String, value: String) {
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(vertical = 8.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
 
         Text(
             text = label,
@@ -332,12 +381,6 @@ fun ProfileField(label: String, value: String) {
                 .padding(12.dp)
         )
     }
-}
-
-
-@Composable
-fun MyClubsScreen(navController: NavHostController) {
-    TODO("Not yet implemented")
 }
 
 
@@ -413,6 +456,7 @@ fun HelpCenterScreen(navController: NavController) {
         }
     }
 }
+
 @Composable
 fun ContactUsScreen() {
     Column(
@@ -483,6 +527,7 @@ fun ContactCard(title: String, subtitle: String, icon: ImageVector) {
         }
     }
 }
+
 @Composable
 fun FAQScreen() {
     val faqList = listOf(
@@ -568,7 +613,11 @@ fun SettingsScreen(navController: NavController) {
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(
+                            Icons.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -578,8 +627,10 @@ fun SettingsScreen(navController: NavController) {
                 )
             )
         }
-    )  { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).padding(20.dp)) {
+    ) { innerPadding ->
+        Column(modifier = Modifier
+            .padding(innerPadding)
+            .padding(20.dp)) {
             SettingItem("Notification Settings", Icons.Default.Notifications) {
                 navController.navigate(Screen.Notifications.route)
             }
@@ -612,7 +663,12 @@ fun SettingsScreen(navController: NavController) {
 }
 
 @Composable
-fun SettingItem(title: String, icon: ImageVector, isDestructive: Boolean = false, onClick: () -> Unit) {
+fun SettingItem(
+    title: String,
+    icon: ImageVector,
+    isDestructive: Boolean = false,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -628,14 +684,16 @@ fun SettingItem(title: String, icon: ImageVector, isDestructive: Boolean = false
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(16.dp)
         ) {
-            Icon(icon, contentDescription = title, tint =  Color.White)
+            Icon(icon, contentDescription = title, tint = Color.White)
             Spacer(modifier = Modifier.width(16.dp))
-            Text(title, style = MaterialTheme.typography.bodyLarge,
+            Text(
+                title, style = MaterialTheme.typography.bodyLarge,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = PoppinsFontFamily,
                 color = Color.White,
-                textAlign = TextAlign.Center,)
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
@@ -661,7 +719,11 @@ fun NotificationScreen(navController: NavController) {
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(
+                            Icons.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
                 }
             )
@@ -756,7 +818,11 @@ fun PasswordManagerScreen(navController: NavController) {
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(
+                            Icons.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
                 }
             )
@@ -867,7 +933,11 @@ fun InviteFriendsScreen(navController: NavController) {
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(
+                            Icons.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
                 }
             )
@@ -975,7 +1045,11 @@ fun PrivacyPolicyScreen(navController: NavController) {
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(
+                            Icons.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.White
+                        )
                     }
                 }
             )

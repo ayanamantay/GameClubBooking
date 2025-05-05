@@ -1,29 +1,24 @@
 package com.example.gameclubbooking
 
-import android.util.Log
+import CreateAccountPart2Screen
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -64,37 +59,28 @@ import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
-import com.google.accompanist.pager.ExperimentalPagerApi
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
-
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-//    MainScreen()
-
-}
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
-    object MyOrders : Screen("orders")
     object LikedClubs : Screen("liked")
     object Tournaments : Screen("events")
     object Profile : Screen("profile")
 
-    // Additional pages
     object YourProfile : Screen("your_profile")
     object AddCard : Screen("addCard")
     object MyClubs : Screen("my_clubs")
     object Settings : Screen("settings")
     object HelpCenter : Screen("help_center")
     object PrivacyPolicy : Screen("privacy_policy")
-    object InviteFriends : Screen("invite_friends")
+    object BookedClubsScreen : Screen("booked_clubs")
     object Notifications : Screen("notifications")
     object PasswordManager : Screen("password_manager")
 
-    object ClubDetails : Screen("club_details/{clubId}") {
-        fun passId(clubId: Int): String = "club_details/$clubId"
+    object ClubDetails : Screen("clubDetails/{clubId}") {
+        fun passId(clubId: String): String = "clubDetails/$clubId"
     }
 
 }
@@ -103,26 +89,23 @@ data class BottomNavItem(
     val title: String,
     val icon: ImageVector,
     val screen: Screen
-)
-
-val TextWhite = Color.White
-
-
-@Composable
+)@Composable
 fun MainScreen() {
+    val clubViewModel: ClubViewModel = viewModel() // handles booking
+    val ordersViewModel: OrdersViewModel = viewModel() // ✅ correct ViewModel for liked clubs
+    val cardViewModel: CardViewModel = viewModel()
     val navController = rememberNavController()
 
     val items = listOf(
         BottomNavItem("Home", Icons.Default.Home, Screen.Home),
-        BottomNavItem("Orders", Icons.Default.List, Screen.MyOrders),
+        BottomNavItem("My Clubs", Icons.Default.List, Screen.BookedClubsScreen),
         BottomNavItem("Liked", Icons.Default.Favorite, Screen.LikedClubs),
         BottomNavItem("Events", Icons.Default.Build, Screen.Tournaments),
         BottomNavItem("Profile", Icons.Default.Person, Screen.Profile)
     )
 
     Scaffold(
-        containerColor = Color(0xFF101828), // Example dark theme background
-
+        containerColor = Color(0xFF101828),
         bottomBar = {
             CustomBottomNavigationBar(navController = navController, items = items)
         }
@@ -132,70 +115,77 @@ fun MainScreen() {
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Home.route) {
-                HomeScreen(navController = navController)
+
+
+
+
+            composable("home") {
+                HomeScreen(navController, ordersViewModel, cardViewModel)
+            }
+            composable("liked") {
+                LikedClubsScreen(navController, ordersViewModel, cardViewModel)
             }
 
-            composable(Screen.MyOrders.route) { MyOrdersScreen(navController) }
-            composable("liked") { backStackEntry ->
-                val navController = rememberNavController() // Use a new instance of NavController
-                LikedClubsScreen(navController = navController) // Pass NavController to the screen
+//            composable(Screen.MyOrders.route) { MyOrdersScreen(navController) }
+
+            composable(
+                route = Screen.ClubDetails.route,
+                arguments = listOf(navArgument("clubId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val clubId = backStackEntry.arguments?.getString("clubId") ?: ""
+                val viewModel = viewModel<ClubViewModel>() // or hiltViewModel<ClubViewModel>()
+
+                ClubDetailsScreen(
+                    clubId = clubId,
+                    navController = navController,
+                    onLikeClick = { clickedClub ->
+                        val index = sampleClubs.indexOfFirst { it.id == clickedClub.id }
+                        if (index != -1) {
+                            val updated = sampleClubs[index].copy(
+                                isLiked = !sampleClubs[index].isLiked
+                            )
+                            sampleClubs[index] = updated
+                            viewModel.bookClub(updated, "dummyDate", "dummyPlace") // example use
+                        }
+                    },
+                    viewModel = clubViewModel // ✅ passed correctly
+                )
             }
 
 
-//            composable("search") { SearchClubScreen(navController) }
             composable("ereceipt") { EReceiptScreen(navController) }
-
 
             composable(Screen.Tournaments.route) {
                 TournamentsScreen(tournaments = sampleTournaments)
             }
             composable(Screen.Profile.route) { ProfileScreen(navController) }
 
-            // Additional pages from profile
+            // Additional profile pages
             composable(Screen.Settings.route) { SettingsScreen(navController) }
             composable(Screen.Notifications.route) { NotificationScreen(navController) }
             composable(Screen.PasswordManager.route) { PasswordManagerScreen(navController) }
             composable(Screen.YourProfile.route) { YourProfileScreen(navController) }
-            composable(Screen.MyClubs.route) { MyClubsScreen(navController) }
             composable(Screen.HelpCenter.route) { HelpCenterScreen(navController) }
             composable(Screen.PrivacyPolicy.route) { PrivacyPolicyScreen(navController) }
-            composable(Screen.InviteFriends.route) { InviteFriendsScreen(navController) }
 
-
-            // Club Details (with argument)
-            composable(
-                route = Screen.ClubDetails.route,
-                arguments = listOf(navArgument("clubId") { type = NavType.IntType })
-            ) { backStackEntry ->
-                val clubId = backStackEntry.arguments?.getInt("clubId") ?: -1
-                ClubDetailsScreen(clubId = clubId, navController = navController)
+            composable(Screen.BookedClubsScreen.route) {
+                BookedClubsScreen(viewModel = clubViewModel) // ✅ same instance
             }
         }
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeScreen(navController: NavController) {
-    val ordersViewModel: OrdersViewModel = viewModel()
-    val cardViewModel: CardViewModel = viewModel()
-
-    val clubs = sampleClubs
-
-    fun toggleLike(club: GameClub) {
-        ordersViewModel.toggleLike(club)  // Toggle the like state and add/remove from liked clubs
-    }
-
-    fun bookClub(club: GameClub, cardViewModel: CardViewModel) {
-        if (cardViewModel.cardDetails == null) {
-            navController.navigate(Screen.AddCard.route) // Navigate to Add Card if no card is added
-        } else {
-            ordersViewModel.placeOrder(club, cardViewModel) // Proceed with booking
-            navController.navigate(Screen.MyOrders.route) // Navigate to orders screen after booking
+    @Composable
+    fun HomeScreen(  navController: NavController,
+                     ordersViewModel: OrdersViewModel,
+                     cardViewModel: CardViewModel
+    ) {
+        val likedIds = remember { derivedStateOf { ordersViewModel.likedClubIds } }
+        val clubs = sampleClubs.map {
+            it.copy(isLiked = likedIds.value.contains(it.id))
         }
-    }
-
 
     Scaffold(
         containerColor = Color(0xFF0A192F),
@@ -239,7 +229,6 @@ fun HomeScreen(navController: NavController) {
                 .background(Color(0xFF0A192F))
                 .verticalScroll(rememberScrollState())
         ) {
-            // News Banner Section
             Spacer(modifier = Modifier.height(16.dp))
 
             val newsItems = listOf(
@@ -247,25 +236,19 @@ fun HomeScreen(navController: NavController) {
                 "📢 Community meeting this Sunday",
                 "💡 Tips for better naming"
             )
-
             NewsBannerPager(newsList = newsItems) {
                 println("Clicked on: $it")
             }
-
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Club Listing Section
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 clubs.forEach { club ->
-                    ClubItem(
-                        club = club,
-                        onClick = { navController.navigate(Screen.ClubDetails.passId(club.id)) },
-                        onLikeClick = { ordersViewModel.toggleLike(club) },
-                        onBookClick = { bookClub(club, cardViewModel) }, // Pass cardViewModel to bookClub
-                        ordersViewModel = ordersViewModel,
-                        cardViewModel = cardViewModel
+                        ClubItem(
+                            club = club,
+                            onClick = { navController.navigate(Screen.ClubDetails.passId(club.id)) },
+                        onLikeClick = { ordersViewModel.toggleLike(club) }
+//                        onBookClick = { bookClub(club) }
                     )
-
                 }
             }
         }
@@ -277,9 +260,8 @@ fun ClubItem(
     club: GameClub,
     onClick: () -> Unit,
     onLikeClick: (GameClub) -> Unit,
-    onBookClick: () -> Unit,
-    ordersViewModel: OrdersViewModel,
-    cardViewModel: CardViewModel
+//    onBookClick: () -> Unit,
+
 ) {
     Card(
         modifier = Modifier
@@ -315,7 +297,9 @@ fun ClubItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row {
-                    IconButton(onClick = { onLikeClick(club) }) {
+                    IconButton(onClick = {
+                        onLikeClick(club) // will handle Firebase update in ViewModel or lambda
+                    }) {
                         Icon(
                             imageVector = if (club.isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Like",
@@ -323,13 +307,12 @@ fun ClubItem(
                         )
                     }
                 }
-
-                // Book Now Button
-                BookNowButton(onClick = onBookClick) // Correctly call onBookClick
+//                BookNowButton(onClick = onBookClick)
             }
         }
     }
 }
+
 
 
 @Composable
@@ -342,9 +325,6 @@ fun BookNowButton(onClick: () -> Unit) {
         Text("Book Now", color = Color.White)
     }
 }
-
-
-
 
 @Composable
 
@@ -462,43 +442,58 @@ fun CustomBottomNavigationBar(
     }
 }
 
+
+
 @Composable
-fun LikedClubsScreen(navController: NavController) {
-    val ordersViewModel: OrdersViewModel = viewModel()  // Get the OrdersViewModel instance
-    val cardViewModel: CardViewModel = viewModel()  // Get the CardViewModel instance
+fun LikedClubsScreen(
+    navController: NavHostController,
+    ordersViewModel: OrdersViewModel,
+    cardViewModel: CardViewModel
+) {
+    val auth = FirebaseAuth.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
+    val currentUser = auth.currentUser
 
-    val likedClubs = ordersViewModel.likedClubs // Access the list of liked clubs
+    val likedClubs1 = sampleClubs.filter { it.isLiked }
+    val likedClubs by remember { derivedStateOf { ordersViewModel.likedClubIds } }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF1C1C27))
-    ) {
-        Text(
-            "Liked Clubs",
+    val clubs = likedClubs.mapNotNull { clubId ->
+        sampleClubs.find { it.id == clubId }?.copy(isLiked = true)
+    }
+
+
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            ordersViewModel.loadLikedClubs() // Refresh liked club IDs
+        }
+    }
+
+    Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
+        Text( "Liked Clubs",
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
+            fontFamily = PoppinsFontFamily,
             color = Color.White,
-            modifier = Modifier.padding(20.dp)
-        )
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,)
+        Spacer(Modifier.height(16.dp))
 
-        LazyColumn {
-            items(likedClubs) { club ->
+        if (currentUser == null) {
+            Text("Please log in to view your liked clubs.")
+        } else if (clubs.isEmpty()) {
+            Text("You haven't liked any clubs yet.")
+        } else {
+            clubs.forEach { club ->
                 ClubItem(
                     club = club,
-                    onClick = { navController.navigate(Screen.ClubDetails.passId(club.id)) },  // Navigate to club details
-                    onLikeClick = { ordersViewModel.toggleLike(club) },  // Remove from liked clubs
-                    onBookClick = { /* Handle booking logic */ },
-                    ordersViewModel = ordersViewModel,  // Pass ordersViewModel to handle booking
-                    cardViewModel = cardViewModel  // Pass cardViewModel to handle booking logic
+                    onClick = { navController.navigate("clubDetails/${club.id}") },
+                    onLikeClick = { /* Optional, no need here */ },
+//                    onBookClick = { /* Optional */ }
                 )
             }
         }
     }
 }
-
-
-
 data class Tournament(
     val id: Int,
     val title: String,

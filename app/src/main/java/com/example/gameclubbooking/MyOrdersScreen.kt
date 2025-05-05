@@ -47,220 +47,106 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.auth.FirebaseAuth
 
-// --- Data classes ---
+
 data class GameClub(
-    val id: Int,
+    val id: String,
     val name: String,
+    val address: String,
     val imageRes: Int,
     val isLiked: Boolean = false
 )
-
-data class ClubOrder(
-    val id: Int,
-    val club: GameClub,
-    val status: OrderStatus
+val sampleClubs = mutableStateListOf(
+    GameClub("1", "Alpha Club", "123 Alpha Street", R.drawable._shot_interiors_gg_light),
+    GameClub("2", "Beta Club", "456 Beta Ave", R.drawable._97a15199870299_y3jvccw4otqsnzawldi1miww),
+    GameClub("3", "Gamma Club", "789 Gamma Blvd", R.drawable._shot_interiors_red_room) ,
+    GameClub("4", "Zeta Club", "256 Zeta Ave", R.drawable.mustang_gaming_club_cover),
+    GameClub("5", "Sigma Club", "111 Sigma Blvd", R.drawable.istock_1354760356)
 )
 
 class OrdersViewModel : ViewModel() {
-    private val _orders = mutableStateListOf<ClubOrder>()
-    val orders: List<ClubOrder> get() = _orders
+    private val _likedClubIds = mutableStateListOf<String>()
+    val likedClubIds: List<String> get() = _likedClubIds
 
-    private val _likedClubs = mutableStateListOf<GameClub>()
-    val likedClubs: List<GameClub> get() = _likedClubs
+    init {
+        loadLikedClubs()
+    }
 
-    fun toggleLike(club: GameClub) {
-        val updatedClub = club.copy(isLiked = !club.isLiked)
-        val index = _likedClubs.indexOfFirst { it.id == club.id }
-
-        if (updatedClub.isLiked) {
-            if (index == -1) {
-                _likedClubs.add(updatedClub)
-            }
-        } else {
-            if (index != -1) {
-                _likedClubs.removeAt(index)
-            }
+    fun loadLikedClubs() {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+        val userDoc = FirebaseFirestore.getInstance().collection("users").document(user.uid)
+        userDoc.get().addOnSuccessListener { doc ->
+            val favorites = doc.get("favorites") as? List<Map<String, String>> ?: emptyList()
+            _likedClubIds.clear()
+            _likedClubIds.addAll(favorites.mapNotNull { it["id"] })
         }
     }
 
-    fun placeOrder(club: GameClub, cardViewModel: CardViewModel) {
-        if (cardViewModel.cardDetails != null) {
-            val newOrder = ClubOrder(
-                id = _orders.size + 1,
-                club = club,
-                status = OrderStatus.ACTIVE
-            )
-            _orders.add(newOrder)
+    fun toggleLike(club: GameClub) {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+        val userDoc = FirebaseFirestore.getInstance().collection("users").document(user.uid)
+
+        // Update local state first
+        val currentlyLiked = _likedClubIds.contains(club.id)
+        if (currentlyLiked) {
+            _likedClubIds.remove(club.id)
         } else {
-            Log.d("Booking", "Please add a card first!")
+            _likedClubIds.add(club.id)
+        }
+
+        // Then update Firestore
+        userDoc.get().addOnSuccessListener { doc ->
+            val currentList = doc.get("favorites") as? List<Map<String, String>> ?: emptyList()
+            val updatedList = if (currentlyLiked) {
+                currentList.filter { it["id"] != club.id }
+            } else {
+                currentList + mapOf(
+                    "id" to club.id,
+                    "name" to club.name,
+                    "address" to club.address,
+                    "image" to club.imageRes.toString()
+                )
+            }
+
+            userDoc.update("favorites", updatedList)
+                .addOnSuccessListener {
+                    loadLikedClubs() // Refresh liked clubs after updating Firestore
+                }
+                .addOnFailureListener {
+                    userDoc.set(mapOf("favorites" to updatedList))
+                        .addOnSuccessListener {
+                            loadLikedClubs() // Refresh liked clubs after setting Firestore
+                        }
+                }
+        }
+    }
+    fun isClubLiked(clubId: String): Boolean {
+        return _likedClubIds.contains(clubId)
+    }
+
+    fun placeOrder(club: GameClub, cardDetails: CardDetails?) {
+        if (cardDetails != null) {
+            println("Placing order for ${club.name} with card ${cardDetails.cardNumber}")
         }
     }
 }
-
-
-
-
 
 class CardViewModel : ViewModel() {
     private val _cardDetails = mutableStateOf<CardDetails?>(null)
     val cardDetails: CardDetails? get() = _cardDetails.value
 
+
     fun addCard(cardNumber: String, expiryDate: String, cvv: String, saveCard: Boolean) {
         val newCard = CardDetails(cardNumber, expiryDate, cvv, saveCard)
         _cardDetails.value = newCard
     }
+
 }
-
-
 data class CardDetails(
     val cardNumber: String,
     val expiryDate: String,
     val cvv: String,
     val saveCard: Boolean
 )
-
-
-
-enum class OrderStatus {
-    ACTIVE, COMPLETED, CANCELLED
-}
-
-// --- Sample data ---
-val sampleClubs = listOf(
-    GameClub(1, "Alpha Club", R.drawable._shot_interiors_gg_light),
-    GameClub(2, "Beta Club", R.drawable._97a15199870299_y3jvccw4otqsnzawldi1miww),
-    GameClub(3, "Gamma Club", R.drawable._shot_interiors_red_room)
-)
-
-val sampleOrders = listOf(
-    ClubOrder(1, sampleClubs[0], OrderStatus.ACTIVE),
-    ClubOrder(2, sampleClubs[1], OrderStatus.COMPLETED),
-    ClubOrder(3, sampleClubs[2], OrderStatus.CANCELLED)
-)
-
-
-@Composable
-fun OrdersTab(orders: List<ClubOrder>) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(orders) { order ->
-            val statusColor = when (order.status) {
-                OrderStatus.ACTIVE -> Color.Green
-                OrderStatus.COMPLETED -> Color.Gray
-                OrderStatus.CANCELLED -> Color.Red
-            }
-
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .padding(horizontal = 20.dp, vertical = 10.dp)
-                    .fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF2B3A55)),
-                elevation = CardDefaults.cardElevation(6.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .padding(12.dp)
-                        .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = order.club.imageRes),
-                        contentDescription = order.club.name,
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            order.club.name,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 18.sp,
-                            color = Color.White,
-                            fontFamily = PoppinsFontFamily
-                        )
-                        Text(
-                            "Status: ${order.status.name}",
-                            fontSize = 14.sp,
-                            color = statusColor,
-                            fontFamily = PoppinsFontFamily
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MyOrdersScreen(navController: NavController, ordersViewModel: OrdersViewModel = viewModel()) {
-    var selectedTab by remember { mutableStateOf(0) }
-    val tabTitles = listOf("Active", "Completed", "Cancelled")
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "My Orders",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = PoppinsFontFamily,
-                        color = Color.White,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, tint = Color.White, contentDescription = "Back", modifier = Modifier.size(28.dp))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF101828),
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues).background(color = Color(0xFF101828))) {
-            TabRow(selectedTabIndex = selectedTab) {
-                tabTitles.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
-                        text = {
-                            Text(
-                                title,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                fontFamily = PoppinsFontFamily,
-                                color = Color.White
-                            )
-                        },
-                        modifier = Modifier.background(Color(0xFF101828))
-                    )
-                }
-            }
-
-            val orders = ordersViewModel.orders
-
-            when (selectedTab) {
-                0 -> OrdersTab(orders.filter { it.status == OrderStatus.ACTIVE })
-                1 -> OrdersTab(orders.filter { it.status == OrderStatus.COMPLETED })
-                2 -> OrdersTab(orders.filter { it.status == OrderStatus.CANCELLED })
-            }
-        }
-    }
-}
-
-
-
-// --- Preview ---
-@Preview(showBackground = true)
-@Composable
-fun MyOrdersScreenPreview() {
-    val navController = rememberNavController()
-    MyOrdersScreen(navController = navController)
-}

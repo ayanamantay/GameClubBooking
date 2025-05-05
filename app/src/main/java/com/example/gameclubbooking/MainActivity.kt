@@ -21,81 +21,29 @@ class MainActivity : ComponentActivity() {
 
             NavHost(
                 navController = navController,
-                startDestination = "main" // Start from onboarding
+                startDestination = "welcome" // Start from onboarding
             ) {
-                // Onboarding Screen
                 composable("onboarding") {
                     OnboardingScreen(navController) // This is where the user starts
                 }
-
-                // Welcome (Login) Screen
                 composable("welcome") {
                     WelcomeScreen(navController) // Your Login screen
                 }
-
-                // Create Account Screen
                 composable("create_account") {
                     CreateAccountPart1Screen(navController)
                 }
-
-                // Main Screen
                 composable("main") {
                     MainScreen()
                 }
-
-                // Forgot Password Screen
                 composable("forgot_password") {
                     ForgowPasPage(navController)
                 }
+
                 composable("create_account2") {
                     CreateAccountPart2Screen(navController)
                 }
-
 
             }
         }
     }
 }
-
-//
-//class MainActivity : ComponentActivity() {
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        setContent {
-//            val navController = rememberNavController()
-//
-//            NavHost(
-//                navController = navController,
-//                startDestination = "onboarding"
-//            ) {
-//                composable("onboarding") {
-//                    OnboardingScreen(navController)
-//                }
-//                composable("welcome") {
-//                    WelcomeScreen(navController)
-//                }
-//                composable("create_account") {
-//                    CreateAccountPart1Screen(navController)
-//                }
-//                composable("main") {
-//                    MainScreen()
-//                }
-//                composable("create_account2") {
-//                    CreateAccountPart2Screen(navController)
-//                }
-//                composable("forgot_password") {
-//                    ForgowPasPage(navController)
-//                }
-//                composable("search") {
-//                    SearchClubScreen(navController)
-//                }
-//                composable("ereceipt") {
-//                    EReceiptScreen(navController)
-//                }
-//            }
-//        }
-//    }
-//}
-
-
-

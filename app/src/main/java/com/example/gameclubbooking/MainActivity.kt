@@ -11,7 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.FirebaseApp
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,15 +21,15 @@ class MainActivity : ComponentActivity() {
 
             NavHost(
                 navController = navController,
-                startDestination = "welcome" // Start from onboarding
+                startDestination = "onboarding"
             ) {
                 composable("onboarding") {
-                    OnboardingScreen(navController) // This is where the user starts
+                    OnboardingScreen(navController)
                 }
                 composable("welcome") {
-                    WelcomeScreen(navController) // Your Login screen
+                    WelcomeScreen(navController)
                 }
-                composable("create_account") {
+                composable("create_account1") {
                     CreateAccountPart1Screen(navController)
                 }
                 composable("main") {
@@ -42,7 +42,6 @@ class MainActivity : ComponentActivity() {
                 composable("create_account2") {
                     CreateAccountPart2Screen(navController)
                 }
-
             }
         }
     }

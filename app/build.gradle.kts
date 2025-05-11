@@ -55,6 +55,19 @@ android {
 }
 
 dependencies {
+
+    implementation ("com.google.accompanist:accompanist-pager:0.34.0")
+    implementation ("com.google.accompanist:accompanist-pager-indicators:0.34.0")
+
+
+    implementation ("com.google.code.gson:gson:2.10.1")
+
+    // Firebase dependencies
+    implementation ("com.google.firebase:firebase-auth:21.1.0") // Firebase Authentication
+    implementation ("com.google.firebase:firebase-database:20.1.0") // Firebase Realtime Database
+
+
+
     implementation("com.google.firebase:firebase-auth:22.3.1")
 
     implementation("androidx.compose.material3:material3:1.2.1") // or the latest

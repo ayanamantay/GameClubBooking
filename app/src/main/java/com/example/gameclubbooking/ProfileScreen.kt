@@ -1,6 +1,6 @@
 package com.example.gameclubbooking
 
-import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,7 +21,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.SnackbarDefaults.backgroundColor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -42,7 +40,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -55,7 +52,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,180 +62,139 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
+import com.example.gameclubbooking.FirebaseAuthManager.deleteAccount
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
-import java.time.LocalDate
-import java.time.Period
+import com.google.firebase.auth.FirebaseAuth
 
 
-@SuppressLint("SuspiciousIndentation")
-@Preview(showBackground = true)
-@Composable
-fun MyPreview() {
-    val navController = rememberNavController()
-//    ProfileScreen(navController)
-//    YourProfileScreen(navController)
-//        HelpCenterScreen(navController)
-//        SettingsScreen(navController)
-//        NotificationScreen(navController)
-//        PasswordManagerScreen(navController)
-
-//        InviteFriendsScreen(navController)
-    PrivacyPolicyScreen(navController)
-}
-
-class UserInfoViewModel : ViewModel() {
-    var userInfo by mutableStateOf(
-        UserProfile("", "", "", "Male", 1, 1, 2000)
-    )
-        private set
-
-    fun updateUserInfo(
-        name: String,
-        surname: String,
-        phoneNumber: String,
-        gender: String,
-        email: String = "",
-        cityAndAddress: String = ""
-    ) {
-        // No need to pass birth day, month, or year anymore
-        userInfo = UserProfile(
-            name = name,
-            surname = surname,
-            phoneNumber = phoneNumber,
-            gender = gender,
-            birthDay = 0, // Default value since birth date isn't saved
-            birthMonth = 0, // Default value
-            birthYear = 0, // Default value
-            email = email,
-            cityAndAddress = cityAndAddress
-        )
-    }
+class SharedRegistrationViewModel : ViewModel() {
+    var name by mutableStateOf("")
+    var surname by mutableStateOf("")
+    var phoneNumber by mutableStateOf("")
+    var gender by mutableStateOf("Male")
+    var cityAndAddress by mutableStateOf("")
+    var selectedDay by mutableStateOf("Day")
+    var selectedMonth by mutableStateOf("Month")
+    var selectedYear by mutableStateOf("Year")
 }
 
 data class UserProfile(
-    val name: String,
-    val surname: String,
-    val phoneNumber: String,
-    val gender: String,
-    val birthDay: Int,
-    val birthMonth: Int,
-    val birthYear: Int,
-    val email: String = "",
+    val name: String = "",
+    val surname: String = "",
+    val phoneNumber: String = "",
+    val gender: String = "Male",
+    val birthDay: Int = 1,
+    val birthMonth: Int = 1,
+    val birthYear: Int = 2000,
     val cityAndAddress: String = ""
-) {
-    val age: Int
-        get() {
-            val today = LocalDate.now()
-            val birthDate = LocalDate.of(birthYear, birthMonth, birthDay)
-            return Period.between(birthDate, today).years
-        }
-}
-
-
+)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavController,
-    userInfoViewModel: UserInfoViewModel = viewModel()
 ) {
     val backgroundColor = Color(0xFF101828)
-    val userInfo = userInfoViewModel.userInfo
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val userId = currentUser?.uid
 
-    Scaffold(
-        containerColor = backgroundColor,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Profile",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = PoppinsFontFamily,
-                        color = Color.White,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = backgroundColor,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
+
+
+    if (userId != null) {
+        val userProfileState = remember { mutableStateOf(UserProfile()) }
+        val errorState = remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(userId) {
+            FirebaseAuthManager.getUserProfile(
+                userId,
+                onSuccess = { profile -> userProfileState.value = profile },
+                onError = { error -> errorState.value = error }
             )
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp)
-                .background(backgroundColor),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(32.dp))
 
-            // Avatar Circle
-            Surface(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape),
-                color = Color.Gray.copy(alpha = 0.2f)
-            ) {
-                // You can put Image(...) here later
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Profile Picture",
-                        tint = Color.White,
-                        modifier = Modifier.size(50.dp)
+        Scaffold(
+            containerColor = backgroundColor,
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Profile",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = PoppinsFontFamily,
+                            color = Color.White,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.White,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = backgroundColor,
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White
                     )
-                }
+                )
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = userInfo.name + " " + userInfo.surname,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = PoppinsFontFamily,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Profile Items
+        ) { paddingValues ->
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(horizontal = 20.dp)
+                    .background(backgroundColor),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ProfileItem("Your Profile") { navController.navigate(Screen.YourProfile.route) }
-                ProfileItem("Add Cards") { navController.navigate(Screen.AddCard.route) }
-                ProfileItem("Settings") { navController.navigate(Screen.Settings.route) }
-                ProfileItem("Help Center") { navController.navigate(Screen.HelpCenter.route) }
-                ProfileItem("Privacy Policy") { navController.navigate(Screen.PrivacyPolicy.route) }
-                ProfileItem("Log out") { navController.navigate("welcome") }
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Surface(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape),
+                    color = Color.Gray.copy(alpha = 0.2f)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Profile Picture",
+                            tint = Color.White,
+                            modifier = Modifier.size(50.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                val profile = userProfileState.value
+                Text(profile.name + " " + profile.surname,
+                    fontSize = 18.sp,
+                    fontFamily = PoppinsFontFamily,
+                    color =  Color.White)
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    ProfileItem("Your Profile") { navController.navigate(Screen.YourProfile.route) }
+                    ProfileItem("Settings") { navController.navigate(Screen.Settings.route) }
+                    ProfileItem("Help Center") { navController.navigate(Screen.HelpCenter.route) }
+                    ProfileItem("Privacy Policy") { navController.navigate(Screen.PrivacyPolicy.route) }
+                    ProfileItem("Log out") { navController.navigate("welcome") }
+                }
             }
         }
     }
@@ -265,121 +221,89 @@ fun ProfileItem(title: String, onClick: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun YourProfileScreen(
-    navController: NavController,
-    userInfoViewModel: UserInfoViewModel = viewModel()
-) {
-    val userInfo = userInfoViewModel.userInfo
-    val backgroundColor = Color(0xFF101828)
 
-    Scaffold(
-        containerColor = backgroundColor,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Your Profile",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = PoppinsFontFamily,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = backgroundColor,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
-                )
+
+@Composable
+fun YourProfileScreen(navController: NavController) {
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val userId = currentUser?.uid
+
+    if (userId != null) {
+        val userProfileState = remember { mutableStateOf(UserProfile()) }
+        val errorState = remember { mutableStateOf<String?>(null) }
+
+        LaunchedEffect(userId) {
+            FirebaseAuthManager.getUserProfile(
+                userId,
+                onSuccess = { profile -> userProfileState.value = profile },
+                onError = { error -> errorState.value = error }
             )
         }
-    ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .background(Color(0xFF101828))
+                .padding(24.dp)
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Surface(
-                modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape),
-                color = Color.Gray.copy(alpha = 0.2f)
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile Picture",
-                        tint = Color.White,
-                        modifier = Modifier.size(50.dp)
-                    )
-                }
+            IconButton(onClick = { navController.popBackStack() }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
             }
+            Text(
+                "Your Profile",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                fontFamily = PoppinsFontFamily
+            )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Show only available data
-            ProfileField("Name", userInfo.name)
-            ProfileField("Surname", userInfo.surname)
-            ProfileField("Phone", userInfo.phoneNumber)
-            ProfileField("Gender", userInfo.gender)
-            ProfileField("Age", userInfo.age.toString())
-            if (userInfo.cityAndAddress.isNotBlank()) {
-                ProfileField("Address", userInfo.cityAndAddress)
+            errorState.value?.let {
+                Text(text = it, color = Color.Red, fontFamily = PoppinsFontFamily)
             }
+            val profile = userProfileState.value
 
-            if (userInfo.email.isNotBlank()) {
-                ProfileField("Email", userInfo.email)
-            }
-
+            ProfileItem1("Name", profile.name)
+            ProfileItem1("Surname", profile.surname)
+            ProfileItem1("Phone", profile.phoneNumber)
+            ProfileItem1("Gender", profile.gender)
+            ProfileItem1("Birthday", "${profile.birthDay}/${profile.birthMonth}/${profile.birthYear}")
+            ProfileItem1("City/Address", profile.cityAndAddress)
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF101828)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("User not logged in", color = Color.Red, fontSize = 18.sp)
         }
     }
 }
-
-
 @Composable
-fun ProfileField(label: String, value: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-
+fun ProfileItem1(label: String, value: String) {
+    Column(modifier = Modifier.padding(bottom = 16.dp)) {
         Text(
             text = label,
+            color = Color.Gray,
             fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            fontFamily = PoppinsFontFamily,
-            color = Color.White.copy(alpha = 0.7f)
+            fontFamily = PoppinsFontFamily
         )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
         Text(
             text = value,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal,
-            fontFamily = PoppinsFontFamily,
             color = Color.White,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF1E293B), RoundedCornerShape(8.dp))
-                .padding(12.dp)
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            fontFamily = PoppinsFontFamily
         )
+        Spacer(modifier = Modifier.height(4.dp))
+        Divider(color = Color.Gray.copy(alpha = 0.3f))
     }
 }
 
@@ -585,17 +509,14 @@ fun FAQItem(question: String, answer: String) {
     }
 }
 
-
-const val SETTINGS_ROUTE = "settings"
-const val NOTIFICATIONS_ROUTE = "notifications"
-const val PASSWORD_MANAGER_ROUTE = "password_manager"
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(navController: NavController) {
     val backgroundColor = Color(0xFF101828)
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
 
     Scaffold(
         containerColor = backgroundColor,
@@ -641,14 +562,28 @@ fun SettingsScreen(navController: NavController) {
                 showDeleteDialog = true
             }
         }
+
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
                 confirmButton = {
                     TextButton(onClick = {
-                        // Perform delete
-                        showDeleteDialog = false
-                    }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                        deleteAccount(
+                            onSuccess = {
+                                showDeleteDialog = false
+                                navController.navigate("welcome") {
+                                    popUpTo(0)
+                                }
+                            },
+                            onError = { errorMsg ->
+                                showDeleteDialog = false
+
+                            }
+                        )
+                    }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteDialog = false }) {
@@ -661,6 +596,7 @@ fun SettingsScreen(navController: NavController) {
         }
     }
 }
+
 
 @Composable
 fun SettingItem(
@@ -792,13 +728,15 @@ fun NotificationItem(title: String, description: String) {
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordManagerScreen(navController: NavController) {
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
 
     Scaffold(
         containerColor = Color(0xFF101828),
@@ -861,7 +799,22 @@ fun PasswordManagerScreen(navController: NavController) {
             Spacer(Modifier.height(24.dp))
 
             Button(
-                onClick = { /* Update password logic */ },
+                onClick = {
+                    if (newPassword == confirmPassword) {
+                        FirebaseAuthManager.changePassword(
+                            newPassword = newPassword,
+                            onSuccess = {
+                                Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+                                navController.popBackStack()
+                            },
+                            onError = { error ->
+                                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    } else {
+                        Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
@@ -901,86 +854,6 @@ fun PasswordField(label: String, value: String, onValueChange: (String) -> Unit)
             cursorColor = Color.White
         )
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun InviteFriendsScreen(navController: NavController) {
-    val friends = listOf(
-        "Adam" to "45212 526334",
-        "Lisa" to "45212 526334",
-        "Jungkook" to "45212 526334",
-        "Jungkook" to "45212 526334",
-        "Jungkook" to "45212 526334",
-        "Jungkook" to "45212 526334",
-        "Jungkook" to "45212 526334"
-    )
-
-    Scaffold(
-        containerColor = Color(0xFF101828),
-        topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF101828)),
-                title = {
-                    Text(
-                        "Invite Friends",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = PoppinsFontFamily,
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 70.dp)
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(innerPadding)
-                .padding(horizontal = 20.dp)
-        ) {
-            items(friends) { (name, number) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = name,
-                            color = Color.White,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            fontFamily = PoppinsFontFamily
-                        )
-                        Text(
-                            text = number,
-                            color = Color.LightGray,
-                            fontSize = 14.sp,
-                            fontFamily = PoppinsFontFamily
-                        )
-                    }
-                    Button(
-                        onClick = { /* Invite logic */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.White)
-                    ) {
-                        Text("Invite", color = Color.Black, fontFamily = PoppinsFontFamily)
-                    }
-                }
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

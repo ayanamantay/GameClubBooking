@@ -1,9 +1,19 @@
-import android.util.Log
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,7 +33,12 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,35 +48,20 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.example.gameclubbooking.FirebaseAuthManager
 import com.example.gameclubbooking.R
-import com.example.gameclubbooking.UserInfoViewModel
+import com.example.gameclubbooking.SharedRegistrationViewModel
+import com.example.gameclubbooking.UserProfile
 import com.example.gameclubbooking.ui.theme.PoppinsFontFamily
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.Period
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
-
-@Preview()
-@Composable
-fun Screens() {
-    val navController = rememberNavController()
-//        OnboardingScreen(navController)
-    WelcomeScreen(navController)
-//        CreateAccountPart1Screen()
-//        CreateAccountPart2Screen(navController)
-//        ForgowPasPage(navController)
-}
 
 @Composable
 fun OnboardingScreen(navController: NavHostController) {
@@ -298,7 +298,7 @@ fun WelcomeScreen(navController: NavHostController) {
                 fontSize = 14.sp,
                 color = Color.White
             )
-            TextButton(onClick = { navController.navigate("create_account") }) {
+            TextButton(onClick = { navController.navigate("create_account2") }) {
                 Text(
                     "Sign up Now",
                     fontFamily = PoppinsFontFamily,
@@ -309,101 +309,85 @@ fun WelcomeScreen(navController: NavHostController) {
         }
     }
 }
-
 @Composable
 fun CreateAccountPart1Screen(
-    navController: NavController? = null,
-    userInfoViewModel: UserInfoViewModel = viewModel()
+    navController: NavController,
+    registrationViewModel: SharedRegistrationViewModel = viewModel()
 ) {
     val genderOptions = listOf("Male", "Female")
-    var gender by remember { mutableStateOf("Male") }
-    var name by remember { mutableStateOf("") }
-    var surname by remember { mutableStateOf("") }
-    var phoneNumber by remember { mutableStateOf("") }
-
-    val dayList = (1..31).map { it.toString() }
-    val monthList = listOf(
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    )
-    val yearList = (1960..2025).map { it.toString() }
-
-    // Retain the birth date fields but don't pass them to ViewModel
-    var selectedDay by remember { mutableStateOf("Day") }
-    var selectedMonth by remember { mutableStateOf("Month") }
-    var selectedYear by remember { mutableStateOf("Year") }
-
-    var cityAndAddress by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-
     val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-            .background(Color(0xFF061C2A))
-            .padding(horizontal = 24.dp)
+            .background(Color(0xFF101828))
+            .padding(horizontal = 12.dp)
     ) {
-        Spacer(modifier = Modifier.height(64.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Create Account",
-            fontSize = 28.sp,
+            text = "Profile Information",
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            fontFamily = PoppinsFontFamily,
             color = Color.White,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            textAlign  = TextAlign.Center,
+            fontFamily = PoppinsFontFamily,
+            modifier = Modifier.padding( vertical = 20.dp, horizontal = 80.dp)
         )
 
-        Text(
-            text = "To get started now!",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            fontFamily = PoppinsFontFamily,
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 32.dp)
-        )
+        Spacer(modifier = Modifier.height(6.dp))
 
-        // Custom Input Fields
         CustomInputField(
             label = "Name",
-            text = name,
-            onValueChange = { name = it }
+            text = registrationViewModel.name,
+            onValueChange = { registrationViewModel.name = it }
         )
-
         Spacer(modifier = Modifier.height(16.dp))
 
         CustomInputField(
             label = "Surname",
-            text = surname,
-            onValueChange = { surname = it }
+            text = registrationViewModel.surname,
+            onValueChange = { registrationViewModel.surname = it }
         )
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
+        CustomInputField(
+            label = "Phone Number",
+            text = registrationViewModel.phoneNumber,
+            onValueChange = { registrationViewModel.phoneNumber = it },
+            keyboardType = KeyboardType.Phone
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        CustomInputField(
+            label = "City and Address",
+            text = registrationViewModel.cityAndAddress,
+            onValueChange = { registrationViewModel.cityAndAddress = it }
+        )
+        Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "GENDER",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = PoppinsFontFamily,
+            text = "Gender",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
             color = Color.White,
-            modifier = Modifier.padding(bottom = 8.dp)
+            fontFamily = PoppinsFontFamily
         )
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Row {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             genderOptions.forEach { option ->
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(end = 24.dp)
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     RadioButton(
-                        selected = gender == option,
-                        onClick = { gender = option },
+                        selected = registrationViewModel.gender == option,
+                        onClick = { registrationViewModel.gender = option },
                         colors = RadioButtonDefaults.colors(
                             selectedColor = Color.White,
                             unselectedColor = Color.Gray
@@ -412,152 +396,112 @@ fun CreateAccountPart1Screen(
                     Text(
                         text = option,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        fontFamily = PoppinsFontFamily,
-                        color = Color.White
+                        color = Color.White,
+                        fontFamily = PoppinsFontFamily
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        CustomInputField(
-            label = "Phone Number",
-            text = phoneNumber,
-            onValueChange = { phoneNumber = it },
-            keyboardType = KeyboardType.Phone
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        CustomInputField(
-            label = "City and Address",
-            text = cityAndAddress,
-            onValueChange = { cityAndAddress = it }
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        CustomInputField(
-            label = "Email",
-            text = email,
-            onValueChange = { email = it },
-            keyboardType = KeyboardType.Email
-        )
-
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "AGE",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = PoppinsFontFamily,
+            text = "Birthday",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
             color = Color.White,
-            modifier = Modifier.padding(bottom = 8.dp)
+            fontFamily = PoppinsFontFamily
         )
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
             DropdownSelector(
-                label = selectedDay,
-                items = dayList,
-                onItemSelected = { selectedDay = it },
+                label = registrationViewModel.selectedDay,
+                items = (1..31).map { it.toString() },
+                onItemSelected = { registrationViewModel.selectedDay = it },
                 modifier = Modifier.weight(1f)
             )
             DropdownSelector(
-                label = selectedMonth,
-                items = monthList,
-                onItemSelected = { selectedMonth = it },
+                label = registrationViewModel.selectedMonth,
+                items = listOf(
+                    "January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"
+                ),
+                onItemSelected = { registrationViewModel.selectedMonth = it },
                 modifier = Modifier.weight(1f)
             )
             DropdownSelector(
-                label = selectedYear,
-                items = yearList,
-                onItemSelected = { selectedYear = it },
+                label = registrationViewModel.selectedYear,
+                items = (1960..2025).map { it.toString() },
+                onItemSelected = { registrationViewModel.selectedYear = it },
                 modifier = Modifier.weight(1f)
             )
         }
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
         Button(
             onClick = {
-                // Simplified validation, skipping birth date validation
-                val isDataValid =
-                    name.isNotBlank() && surname.isNotBlank() && phoneNumber.isNotBlank() && email.isNotBlank()
+                val userId = FirebaseAuth.getInstance().currentUser?.uid
+                if (userId != null) {
+                    val userProfile = UserProfile(
+                        name = registrationViewModel.name,
+                        surname = registrationViewModel.surname,
+                        phoneNumber = registrationViewModel.phoneNumber,
+                        gender = registrationViewModel.gender,
+                        cityAndAddress = registrationViewModel.cityAndAddress,
+                        birthDay = registrationViewModel.selectedDay.toIntOrNull() ?: 1,
+                        birthMonth = monthStringToNumber(registrationViewModel.selectedMonth),
+                        birthYear = registrationViewModel.selectedYear.toIntOrNull() ?: 2000
+                    )
 
-                if (isDataValid) {
-                    try {
-                        // Ensure ViewModel update is happening properly without birth date
-                        userInfoViewModel.updateUserInfo(
-                            name = name,
-                            surname = surname,
-                            phoneNumber = phoneNumber,
-                            gender = gender,
-                            cityAndAddress = cityAndAddress,
-                            email = email
-                        )
-                        Log.d("Navigation", "ViewModel updated successfully")
-
-                        // Navigate if everything is valid
-                        navController?.navigate("create_account2") ?: run {
-                            Log.d("Navigation", "NavController is null, cannot navigate")
+                    FirebaseAuthManager.uploadUserProfile(userId, userProfile,
+                        onSuccess = {
+                            navController.navigate("main")
+                        },
+                        onError = { error ->
                         }
-                    } catch (e: Exception) {
-                        Log.e(
-                            "Error",
-                            "Error occurred while updating user info or navigating: ${e.message}"
-                        )
-                    }
-                } else {
-                    // Log the invalid input issue
-                    Log.d("Navigation", "Invalid input data!")
-                    // Optionally, show a toast or error message
+                    )
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(54.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4CAF50),
-                contentColor = Color.White
+                .height(56.dp)
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+        ) {
+            Text(
+                text = "Save Profile",
+                color = Color(0xFF101828),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = PoppinsFontFamily
             )
-        ) {
-            Text("Continue", fontFamily = PoppinsFontFamily)
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedButton(
-            onClick = { navController?.navigate("create_account2") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp)
-                .clip(RoundedCornerShape(16.dp)),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-            border = BorderStroke(1.dp, Color.White)
-        ) {
-            Text("Skip", fontFamily = PoppinsFontFamily)
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
+fun monthStringToNumber(month: String): Int {
+    return listOf(
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ).indexOf(month) + 1
+}
 
 @Composable
 fun CustomInputField(
     label: String,
-    text: String,  // Added this parameter to bind the value
+    text: String,
     onValueChange: (String) -> Unit,
     keyboardType: KeyboardType = KeyboardType.Text
 ) {
-    var value by remember { mutableStateOf("") }
-
     OutlinedTextField(
         value = text,
-        onValueChange = { newText -> onValueChange(newText) },
+        onValueChange = onValueChange,
         label = {
             Text(
                 text = label,
@@ -567,7 +511,8 @@ fun CustomInputField(
         },
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(80.dp)
+            .padding(vertical = 8.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color.White,
             unfocusedBorderColor = Color.Gray,
@@ -670,7 +615,6 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
                 .padding(top = 8.dp, bottom = 32.dp)
         )
 
-        // Email
         CustomInputField(
             label = "Email",
             text = email,
@@ -679,7 +623,6 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Password
         CustomInputField(
             label = "Password",
             text = password,
@@ -688,7 +631,6 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Confirm Password
         CustomInputField(
             label = "Confirm Password",
             text = confirmPassword,
@@ -697,15 +639,20 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
         )
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Register Button
         Button(
             onClick = {
-                FirebaseAuthManager.register(
-                    email = email,
-                    password = password,
-                    onSuccess = { navController.navigate("main") },
-                    onError = { error -> errorMessage = error }
-                )
+                if (password != confirmPassword) {
+                    errorMessage = "Passwords do not match"
+                } else {
+                    FirebaseAuthManager.register(
+                        email = email,
+                        password = password,
+                        onSuccess = {
+                            navController.navigate("create_account1")
+                        },
+                        onError = { error -> errorMessage = error }
+                    )
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -725,6 +672,8 @@ fun CreateAccountPart2Screen(navController: NavHostController) {
                 fontWeight = FontWeight.Medium
             )
         }
+
+
         errorMessage?.let {
             Text(it, color = Color.Red, fontSize = 14.sp)
         }

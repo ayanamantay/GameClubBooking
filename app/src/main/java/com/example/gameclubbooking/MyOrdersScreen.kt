@@ -56,15 +56,20 @@ data class GameClub(
     val name: String,
     val address: String,
     val imageRes: Int,
-    val isLiked: Boolean = false
+    val isLiked: Boolean = false,
+    val rating: Double,
+    val description: String,
+    val price: String
 )
+
 val sampleClubs = mutableStateListOf(
-    GameClub("1", "Alpha Club", "123 Alpha Street", R.drawable._shot_interiors_gg_light),
-    GameClub("2", "Beta Club", "456 Beta Ave", R.drawable._97a15199870299_y3jvccw4otqsnzawldi1miww),
-    GameClub("3", "Gamma Club", "789 Gamma Blvd", R.drawable._shot_interiors_red_room) ,
-    GameClub("4", "Zeta Club", "256 Zeta Ave", R.drawable.mustang_gaming_club_cover),
-    GameClub("5", "Sigma Club", "111 Sigma Blvd", R.drawable.istock_1354760356)
+    GameClub("1", "Alpha Club", "123 Alpha Street", R.drawable._shot_interiors_gg_light,false, 4.5, "The Alpha Club is the best for eSports and casual gamers.", "tg1000"),
+    GameClub("2", "Beta Club", "456 Beta Ave", R.drawable._97a15199870299_y3jvccw4otqsnzawldi1miww,false, 4.2, "Beta Club is great for tournaments and casual events.", "tg800"),
+    GameClub("3", "Gamma Club", "789 Gamma Blvd", R.drawable._shot_interiors_red_room, false, 4.7, "Gamma Club offers the best VR experiences.", "tg1200"),
+    GameClub("4", "Zeta Club", "256 Zeta Ave", R.drawable.mustang_gaming_club_cover, false, 4.9, "Zeta Club is perfect for professional gaming events.", "tg1500"),
+    GameClub("5", "Sigma Club", "111 Sigma Blvd", R.drawable.istock_1354760356, false, 4.0, "Sigma Club specializes in retro gaming and casual hangouts.", "tg600")
 )
+
 
 class OrdersViewModel : ViewModel() {
     private val _likedClubIds = mutableStateListOf<String>()
@@ -88,7 +93,6 @@ class OrdersViewModel : ViewModel() {
         val user = FirebaseAuth.getInstance().currentUser ?: return
         val userDoc = FirebaseFirestore.getInstance().collection("users").document(user.uid)
 
-        // Update local state first
         val currentlyLiked = _likedClubIds.contains(club.id)
         if (currentlyLiked) {
             _likedClubIds.remove(club.id)
@@ -96,7 +100,6 @@ class OrdersViewModel : ViewModel() {
             _likedClubIds.add(club.id)
         }
 
-        // Then update Firestore
         userDoc.get().addOnSuccessListener { doc ->
             val currentList = doc.get("favorites") as? List<Map<String, String>> ?: emptyList()
             val updatedList = if (currentlyLiked) {
@@ -112,41 +115,15 @@ class OrdersViewModel : ViewModel() {
 
             userDoc.update("favorites", updatedList)
                 .addOnSuccessListener {
-                    loadLikedClubs() // Refresh liked clubs after updating Firestore
+                    loadLikedClubs()
                 }
                 .addOnFailureListener {
                     userDoc.set(mapOf("favorites" to updatedList))
                         .addOnSuccessListener {
-                            loadLikedClubs() // Refresh liked clubs after setting Firestore
+                            loadLikedClubs()
                         }
                 }
         }
     }
-    fun isClubLiked(clubId: String): Boolean {
-        return _likedClubIds.contains(clubId)
-    }
-
-    fun placeOrder(club: GameClub, cardDetails: CardDetails?) {
-        if (cardDetails != null) {
-            println("Placing order for ${club.name} with card ${cardDetails.cardNumber}")
-        }
-    }
 }
 
-class CardViewModel : ViewModel() {
-    private val _cardDetails = mutableStateOf<CardDetails?>(null)
-    val cardDetails: CardDetails? get() = _cardDetails.value
-
-
-    fun addCard(cardNumber: String, expiryDate: String, cvv: String, saveCard: Boolean) {
-        val newCard = CardDetails(cardNumber, expiryDate, cvv, saveCard)
-        _cardDetails.value = newCard
-    }
-
-}
-data class CardDetails(
-    val cardNumber: String,
-    val expiryDate: String,
-    val cvv: String,
-    val saveCard: Boolean
-)
